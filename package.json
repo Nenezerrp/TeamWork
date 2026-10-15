@@ -21,6 +21,7 @@
     "scripts/",
     "public/",
     "docs/",
+    "!docs/images",
     "README.md",
     "LICENSE"
   ],

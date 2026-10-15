@@ -107,6 +107,21 @@ teamwork start
 teamwork setup
 ```
 
+**📸 界面一览**（四步走完的样子）：
+
+<p align="center">
+<table>
+  <tr>
+    <td width="50%" align="center"><b>① 登录</b>——输入登录 ID 即进入（临时身份，本机持久）<br><img src="docs/images/login.jpg" alt="登录页"></td>
+    <td width="50%" align="center"><b>② 创建 / 加入工作组</b>——Leader 建组，成员凭组名 + 密码加入<br><img src="docs/images/create-workspace.jpg" alt="创建工作组"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><b>③ 一键配置 AI 工具 MCP</b>——自动检测 TRAE / Claude Code / Cursor<br><img src="docs/images/mcp-setup.jpg" alt="MCP 配置"></td>
+    <td width="50%" align="center"><b>④ 主流程页（节点地图）</b>——协作全流程一目了然<br><img src="docs/images/workspace-dashboard.jpg" alt="主流程页"></td>
+  </tr>
+</table>
+</p>
+
 完成后打开 AI 工具即可协作。升级 / 远程访问 / 个人身份绑定等见 [docs/getting-started.md](docs/getting-started.md)。
 
 ## 💬 使用提示词建议

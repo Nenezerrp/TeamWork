@@ -120,6 +120,36 @@ teamwork feishu-auth --app-id <你的AppID> --app-secret <你的AppSecret> [--ro
 | `teamwork setup` | 检测 AI 工具 + 自动配置 MCP |
 | `teamwork setup --trae / --claude / --cursor` | 只配置指定工具 |
 
+## 使用提示词建议
+
+配置好 MCP 后无需记工具名——**对 AI 说人话即可**，AI 会自动调用对应的 MCP 协作工具。三个核心场景的推荐提示词模板（`<>` 为填空位）：
+
+### ① Leader：发布任务（AI → `teamwork_publish_task`）
+
+> 帮我发布一个协作任务：`<一句话任务描述，如：为登录模块实现 JWT 中间件>`。
+> - 目标：`<要达成什么，1~3 条>`
+> - 验收标准：`<怎样算完成，尽量可量化>`
+> - 分配：`<可选：交给服务器按成员画像自动拆分分配；或直接指定成员名和各自子任务>`
+
+说明：不写「分配」时，服务器用 Leader 的 AI 结合成员 shareSkill / 身份域 / 空闲状态自动拆分，并按画像定向注入候选成员收件箱；点名指定成员的任务会经飞书任务流传播到该成员本机收件箱，由其 AI 自动唤起。
+
+### ② 成员：查看可拾取任务（AI → `teamwork_inbox_status`）
+
+> 查看我的任务收件箱：现在有哪些可拾取的任务？列出任务名、验收标准和前置摘要。
+
+说明：建议每个会话开始时和完成一项工作后各查一次；其他机器发布的任务会在查询时自动从飞书云端对齐到本机收件箱，无需等待。
+
+### ③ 成员：完成任务节点（AI → `teamwork_report_done`）
+
+> 任务「`<任务名>`」已完成，上报结果：
+> - 做了什么：`<completed：改动文件 / 通过的测试 / 交付物>`
+> - 关键发现：`<learned：踩过的坑 / 关键决策 / 坑的绕法>`
+> - 下一步：`<next_steps：给后继拾取者的建议与注意事项>`
+
+说明：summary 会作为后继拾取者的注入上下文，按「做了什么 / 关键发现 / 下一步」三段结构化写最有效；上报后，依赖该任务的后继子任务自动解锁并从全员收件箱清除。
+
+> 💡 其余场景（拾取抢锁 `teamwork_ack`、共享记忆 `teamwork_share_memory`、共识提议 `teamwork_consensus`、链路继承 `teamwork_inherit` 等）同样**自然语言触发即可**——协议指引已内置在工具描述与注入源中，AI 会话中想到什么直接说。
+
 ## 静默拾取（v1.0.8）——继承任务后 AI 零输入开工
 
 Server 每 3 秒把「身份 + 共识 + 收件箱 + **进行中任务（含链上前人记忆摘要：谁做了什么/怎么做的/卡在哪 + 验收标准 + 📄 文件锚点）**」写入 `~/.teamwork/inject-{wsId}.md`，也可 HTTP 拉取（`GET /api/ws/<wsId>/inject.md`，带登录 token）。在仪表盘继承/拾取任务后，你的 AI 对话框只要被注入这份文件，即拥有全部背景——不再需要手动粘贴提示词；摘要之外的完整叙事按需调 `teamwork_timeline` / `teamwork_get_observations`（渐进披露，防上下文膨胀）。
@@ -131,6 +161,16 @@ Server 每 3 秒把「身份 + 共识 + 收件箱 + **进行中任务（含链�
 | MCP 宿主（TRAE / Claude Code / Cursor） | AI 会话自然触发 `teamwork_inbox_status` / `teamwork_search` 即可——协议指引已内置在工具描述与注入源 |
 | 采集钩子 | `node scripts/observe-hook.mjs --ws <wsId> --file <对话日志> --inject-file zz-teamwork-inject.md`——边采集对话边把注入源原子落盘到项目文件（含 2s 超时 fail-open） |
 | 任意 hook / rules（SessionStart 等） | hook 脚本读 `~/.teamwork/inject-{wsId}.md` 附加进会话上下文——`<teamwork-inject>` 标签外手写内容永不覆盖 |
+
+## 功能状态（🚧 正在开发中）
+
+以下三个功能当前未开放，底层链路已就绪、后续开放零迁移：
+
+| 功能 | 当前状态 |
+|---|---|
+| **共享 Skill** | 🚧 正在开发中——MCP `teamwork_skills` 目前仅支持列出工作组已注册的技能；技能注册 / 分发 / 仪表盘技能库的完整链路正在开发 |
+| **仪表盘「🔍 检索」** | 🚧 正在开发中——手动检索入口暂停开放（按钮提示「功能暂停开放」）；**AI 侧三层检索已可用**：`teamwork_search`（索引）→ `teamwork_timeline`（上下文）→ `teamwork_get_observations`（详情） |
+| **仪表盘「☁ 云恢复」** | 🚧 正在开发中——手动全量恢复入口暂停开放；**自动云同步不受影响**：任务 / 记忆实时上云，新成员加入、换机时自动从云端恢复 |
 
 ## 环境变量（可选）
 

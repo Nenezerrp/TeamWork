@@ -46,6 +46,7 @@ AI 会话是天然孤岛——每个人的 AI 不知道别人做了什么。Team
 | 🔗 | **链路继承** | 未完成开发链可被新成员自主继承（open-ends → inherit → InheritBundle）——溯源 + 崩溃回退防护，失败记忆沉淀为 gotcha 防重蹈覆辙 |
 | ☁️ | **飞书云同步** | 全部数据实时同步飞书云文档：换机、新成员加入即自动恢复；隐私管线（`<private>` 剥离 + 正则脱敏）先过审再上云 |
 | 🗺️ | **可视化仪表盘** | 节点地图（真实注入边 / 拓扑徽标 / 回退过滤）、成员状态、任务看板、共识管理、Metering（token 用量 + 预算告警） |
+| 🚧 | **正在开发中** | **共享 Skill**（注册 / 分发链路，`teamwork_skills` 当前仅列出）、仪表盘 **「🔍 检索」「☁ 云恢复」手动入口**（底层 API 与自动云同步已就绪，开放后零迁移；AI 侧三层检索 `teamwork_search` 已可用） |
 
 ---
 
@@ -108,6 +109,29 @@ teamwork setup
 
 完成后打开 AI 工具即可协作。升级 / 远程访问 / 个人身份绑定等见 [docs/getting-started.md](docs/getting-started.md)。
 
+## 💬 使用提示词建议
+
+配好 MCP 后**用自然语言对话即可驱动协作**——无需记工具名，AI 会自动调用对应的 MCP 协作工具。三个高频场景：
+
+**① Leader 发布任务**（AI 自动调用 `teamwork_publish_task`，画像感知拆分 + 定向分发）
+
+> 帮我发布一个协作任务：为登录模块实现 JWT 中间件。
+> 要求：token 签发 / 校验 / 刷新三个端点；验收标准是无 token 访问受保护路由返回 401。
+> 可以让服务器按成员技能和空闲状态自动拆分子任务并分配。
+
+**② 成员查看可拾取任务**（AI 自动调用 `teamwork_inbox_status`）
+
+> 查看我的任务收件箱，现在有哪些可拾取的任务？把任务名、验收标准和前置摘要列出来。
+
+**③ 成员完成任务节点**（AI 自动调用 `teamwork_report_done`，自动解锁后继任务）
+
+> 任务「JWT 中间件」已完成，上报结果——
+> 做了什么：新增 `auth/middleware.js`，签发 / 校验 / 刷新三个端点全部通过自测；
+> 关键发现：refresh token 需要独立的过期黑名单表；
+> 下一步：后继任务可直接调用 `verifyToken()`，注意先安装 `jsonwebtoken` 依赖。
+
+更多场景（任务拾取 / 共享记忆 / 共识提议 / 链路继承）与完整模板见 [使用手册 · 使用提示词建议](docs/getting-started.md#使用提示词建议)。
+
 ## 🎬 70 分钟实战演示（双端剧本）
 
 [docs/demo-collaboration.md](docs/demo-collaboration.md) 按时间轴还原了一次真实协作——Leader 阿哲 × 前端成员小雨在各自 AI 工具里完成「JWT 中间件 + 登录页 UI + API 联调」三个任务，逐事件标注什么提示词触发了哪个 hook / MCP 工具、server 幕后做了什么：
@@ -131,7 +155,7 @@ teamwork setup
 | 共享记忆 | `teamwork_share_memory` · `teamwork_observe`（静默采集）· `teamwork_search` · `teamwork_timeline` · `teamwork_get_observations` |
 | 共识治理 | `teamwork_consensus`（提议 / 确认 / 裁决 / 归档四模式） |
 | 链路继承 | `teamwork_open_ends` · `teamwork_inherit` · `teamwork_revert`（崩溃回退 + 失败记忆沉淀） |
-| 身份与技能 | `teamwork_join` · `teamwork_skills` |
+| 身份与技能 | `teamwork_join` · `teamwork_skills`（🚧 注册 / 分发链路开发中，当前仅支持列出） |
 
 协议指引已内置在工具描述与注入源中——**AI 会话自然触发即可，无需记工具**。
 

@@ -369,7 +369,7 @@ tenant_token 兜底（app_id / app_secret）
 - **动因（真实踩坑：新成员徐景波 feishu-auth 被拒「你没有 Workspace 的使用权限」）**：飞书自建应用每个版本需配置**可用范围**，企业策略锁死「只能个人级」（不能全员/部门）→ 每来一个成员需管理员后台逐人加白名单；且成员在 feishu-auth 之前机器无任何凭据（凭据是 feishu-auth 落盘的）→ 「先建组报没飞书权限」的死锁时序
 - **凭据三件套内嵌默认值（feishu-sync.js）**：兜底链升级 `env > ~/.teamwork/feishu.json > 内置常量`（appId/appSecret/rootFolder）——README/INSTALL 本就明文分发同值，内嵌无额外暴露；新成员装包 start 后 **tenant 通道零配置可用**（建组/加组/同步/NodeMap 全通）
 - **README/INSTALL 流程重排**：第 3 步「创建或加入工作组（装完即用，无需飞书授权）」；第 4 步降级为「可选增强：绑定个人飞书身份」（云文档归属个人）+ 前置标注「管理员需先把你加入应用可用范围」
-- **验证（全新装机模拟）**：临时 USERPROFILE 指向空目录（无 .env 无 feishu.json 无 state）→ server 起 → `tenant_token 获取成功` + `凭据就绪（根目录显式配置 GpLsfKxo...）`——开箱即用 PASS；附带 legacy user_token 跳过逻辑实测生效
+- **验证（全新装机模拟）**：临时 USERPROFILE 指向空目录（无 .env 无 feishu.json 无 state）→ server 起 → `tenant_token 获取成功` + `凭据就绪（根目录显式配置 <folder-token>）`——开箱即用 PASS；附带 legacy user_token 跳过逻辑实测生效
 - **运维教训（持久 shell 环境污染）**：测试时 `$env:USERPROFILE = 'D:\temp-newuser'` 设在**持久 PowerShell 会话**中未清 → 之后 spawn 的所有 server（secret/pid/log/state）全写进临时目录（已删则静默重建）——表现为「服务正常但文件全消失」假象；修法：环境变量用后即清 `Remove-Item Env:XXX`，spawn 类运维命令后必须验证 secret/pid/log 落位
 
 
@@ -378,7 +378,7 @@ tenant_token 兜底（app_id / app_secret）
 - **全局安装凭据断链修复**（用户真实踩坑：server 从 `node_modules\@teamwork\cli` 启动无 .env → 凭据全空 → tenant 通道 + refresh 续期（需 client_id/secret）双断）：`feishu-sync.js` 凭据兜底链 `env > ~/.teamwork/feishu.json`（feishu-auth CLI 首次运行自动持久化 appId/appSecret——成员机跑过一次授权即凭据闭环，**.env 分发形态彻底终结**）；`rootFolder` 一并兜底（无它则个人身份建组/搜组必失败）；读文件容错**剥 BOM**（PowerShell 5.1 `-Encoding UTF8` 写 BOM 版，JSON.parse 直接炸——实测踩坑）；legacy demo 通道无 refreshToken 时跳过续期尝试（不再每次启动必报错）
 - **state 落位修复**：默认 `TEAMWORK_STATE_FILE` → `~/.teamwork/state.json`（旧默认=包根 state-v4.json 在全局安装时位于 node_modules 内，**npm 升级即丢全部用户/工作组/绑定**）；一次性自动迁移（新路径不存在且旧路径有 state → 拷贝，原文件保留）；开发模式 `npm start` → `scripts/dev-start.mjs` 钉回仓库 state（防开发数据与生产 home state 互串）
 - **CLI feishu-auth 增强**：`--root-folder <token>` 参数（随凭据一并持久化 feishu.json）——Leader 分发命令变为 `teamwork feishu-auth --app-id .. --app-secret .. --root-folder ..`；换 token 响应缺 refresh_token 时显式警告
-- **验证（模拟全局安装环境：cwd=TEMP 无 .env + 临时 state + 8899 端口）**：`[feishu] env 未配置，凭据兜底自: ~/.teamwork/feishu.json` → `tenant_token 获取成功`（真连飞书）→ `凭据就绪，同步引擎已激活（根目录显式配置 GpLsfKxo...）`——全链路 PASS
+- **验证（模拟全局安装环境：cwd=TEMP 无 .env + 临时 state + 8899 端口）**：`[feishu] env 未配置，凭据兜底自: ~/.teamwork/feishu.json` → `tenant_token 获取成功`（真连飞书）→ `凭据就绪，同步引擎已激活（根目录显式配置 <folder-token>）`——全链路 PASS
 - **发包（1.0.4）**：v4.7.3 全量；1.0.3 有缺陷（feishu-auth 无 scope——成员绑定 2h 即废）不作分发，已归档 dist-archive/
 - **首次真实用户绑定（Leader 本人）**：OAuth 全链路 + server 落库（feishuName「励晓烽」openId ou_207f...）+ 根目录共享（「已有」——v4.6.9 统一管理时代 batch_create 共享过同一 openId）
 
@@ -407,19 +407,19 @@ tenant_token 兜底（app_id / app_secret）
 - **验证（2026-10-14 实测）**：netstat `TCP 127.0.0.1:8787 LISTENING`（仅回环——外部网络层不可达）+ 横幅「▸ 监听 127.0.0.1（本机模式 v4.7.1——跨机共享走飞书云文档）」+ 本机 API 401（活着）+ state 19 用户/8 组完好恢复
 
 ### v4.7（2026-10-14，用户身份飞书操作——每个成员用自己的飞书账号操作共享目录，tenant 降为兜底）
-- **需求（用户裁定，否决 tenant 统一身份方案）**：Workspace 应用（Leader 创建的飞书应用）的凭据（env：app_id/app_secret）分发给每个安装 teamwork 的人；所有使用者**用自己已登录的飞书账号**作为凭证，通过应用对共享飞书云文档目录（`TeamWork-Demo`，用户裁定沿用应用空间根目录 `GpLsfKxo...`）下的工作组做**创建/加入/搜索/删除**与记忆上传——操作归属操作者本人，目录统一在 Leader 指定根目录下
+- **需求（用户裁定，否决 tenant 统一身份方案）**：Workspace 应用（Leader 创建的飞书应用）的凭据（env：app_id/app_secret）分发给每个安装 teamwork 的人；所有使用者**用自己已登录的飞书账号**作为凭证，通过应用对共享飞书云文档目录（`TeamWork-Demo`，用户裁定沿用应用空间根目录 `<folder-token>`）下的工作组做**创建/加入/搜索/删除**与记忆上传——操作归属操作者本人，目录统一在 Leader 指定根目录下
 - **架构（per-user token + 渐进兜底）**：
   - `feishu-sync.js` 凭据链改为 `getToken(actor)`：**操作者绑定过飞书 → 其个人 user_access_token（过期自动 refresh_token 续期 ~30 天）→ 未绑定 → tenant 兜底（渐进可用，绑定后自动切换）**；旧 demo 单一 user-token 文件通道降级 legacy
-  - 根目录显式化：`.env` 新增 `FEISHU_ROOT_FOLDER=GpLsfKxo...`——成员个人身份从"我的空间"**发现不了**共享根目录（不在其个人空间），必须显式 token（`rootFolderToken(actor)`：env 优先，缺失时按老方式发现兜底）
+  - 根目录显式化：`.env` 新增 `FEISHU_ROOT_FOLDER=<folder-token>`——成员个人身份从"我的空间"**发现不了**共享根目录（不在其个人空间），必须显式 token（`rootFolderToken(actor)`：env 优先，缺失时按老方式发现兜底）
   - **操作身份矩阵**：建组=创建者身份（`ensureWorkspaceFolder(name, user)` + `_workspace.json` 同）；join=加入者身份读（`searchWorkspaceFolder`/`readWorkspaceConfig` 传 user）；删组=操作者身份；**记忆上传=每节点以其作者（`n.who`）身份**（`doSync` per-node actor）；共识快照/云恢复=组 Leader 或发起成员身份；全部未绑定 → tenant 兜底并在日志标注操作者
 - **per-user token 存储**：`state.users[clientId].feishuToken = {accessToken, refreshToken, expiresAt, openId, feishuName, boundAt}`——**持久化在 state（server 重启不丢，与 2h session token 解耦）**；feishu-sync 经 `setUserTokenAccess(provider, saver)` 注入读写（续期自动回写）
 - **新端点**（server/index.js）：`POST /api/feishu/token`（feishu-auth 上报）→ ① `user_info` 验证 token（实测假 token 报 `code=20005 invalid access token`）→ ② **tenant 自动把根目录共享给该用户 open_id（`perm:'edit'`，幂等）**——绑定即授权，个人身份才能在根目录下建组目录 → ③ 按用户落盘；`GET /api/feishu/status`（绑定状态查询，未绑定返回引导 hint）
 - **新 CLI 命令 `teamwork feishu-auth`**（bin/teamwork.js，全局副本已同步）：
   - 应用凭据来源：`--app-id/--app-secret` 参数（首次自动持久化到 `~/.teamwork/feishu.json`）或该文件（Leader 分发物）
   - 流程：本地 9916 回调 → `authen/v1/authorize` 浏览器授权（用户自己的飞书账号）→ `authen/v2/oauth/token` 换 token（demo 实测链路：access ~2h + **refresh ~30 天**）→ 本地备份 `~/.teamwork/user-token.json` → 上报中心 server（Bearer 本机 token.json 的 session token）
-  - **env 分发形态简化**：旧 feishu-setup.mjs（tenant .env 分发）正式作废——现在只需给用户一条命令：`teamwork feishu-auth --app-id cli_aa46d1... --app-secret <secret>`（server 地址默认 localhost，见 v4.7.1）
+  - **env 分发形态简化**：旧 feishu-setup.mjs（tenant .env 分发）正式作废——现在只需给用户一条命令：`teamwork feishu-auth --app-id cli_xxxx... --app-secret <secret>`（server 地址默认 localhost，见 v4.7.1）
 - **E2E 回归（本轮实测）**：① v4.7 启动消息正确（根目录显式配置 + 用户身份模式提示）② 未绑定用户建组 `V47-FallbackTest` → tenant 兜底 + 显式根目录 → `feishuFolder=NBiGfy...` 建组成功（日志「操作者身份: cli_v47_verify_1」）③ `POST /api/ws/:id/delete` 删组+飞书目录删除成功 ④ `/api/feishu/status` 未绑定→引导 hint；假 token 上报→400 `user_info code=20005`——**全部通过，测试痕迹已清理**
-- **用户侧前提（Leader 一次性配置，尚未做）**：① 飞书后台「安全设置 → 重定向 URL」添加 `http://localhost:9916/callback`（每用户本地 OAuth 回调用，demo 时代旧应用配过同款）② 确认新应用权限点**「用户身份」列**已开通（demo 旧应用开通过；新应用 `cli_aa46d1` 开通云文档权限时若只勾了应用身份需补勾）③ 把 app_id/app_secret 分发给用户（feishu-auth 命令形式）
+- **用户侧前提（Leader 一次性配置，尚未做）**：① 飞书后台「安全设置 → 重定向 URL」添加 `http://localhost:9916/callback`（每用户本地 OAuth 回调用，demo 时代旧应用配过同款）② 确认新应用权限点**「用户身份」列**已开通（demo 旧应用开通过；新应用 `cli_xxxx` 开通云文档权限时若只勾了应用身份需补勾）③ 把 app_id/app_secret 分发给用户（feishu-auth 命令形式）
 - **遗留**：① 浏览器 UI 的「绑定飞书」引导按钮未做（`/api/feishu/status` 端点已就绪，下版加）② 真实用户 OAuth 全链路（浏览器登录授权）需 Leader 本人在自己账号上跑一次 `teamwork feishu-auth` 验证（CLI 已就绪：无凭据提示/命令注册/全局副本均已验）③ 现有 8 组目录无需迁移——用户绑定（根目录共享 edit）后即可访问其下全部子目录
 
 ### v4.6.8（2026-10-14，根因修复：地图 SVG 被全局 CSS 误伤——`pointer-events:none` 导致一切鼠标交互从未生效）
@@ -445,8 +445,8 @@ tenant_token 兜底（app_id / app_secret）
 - **E2E 验证**：沙盒 HOME 隔离跑 `teamwork link <token> <wsId> <user> --server http://10.198.17.151:8787` → token.json 含 server 字段 + setup 输出/手动 MCP JSON 均带远程 URL 且零污染本机配置；MCP 回退单测（无 env→token.server / 有 env→env 优先）双通；LAN IP 模拟远程：`/api/workspaces` 401（未带 token 预期）+ `/lobby` serve 新版 linkCmd（静态文件每请求磁盘现读 → 改动即时生效）
 - **新用户接入三步**：① 浏览器开 `http://10.198.17.151:8787` 注册登录 → 创建/加入工作组（弹窗出现）② 复制弹窗 `teamwork link ... --server http://10.198.17.151:8787` 命令在本地终端运行（写 token.json + 自动配 AI 工具 MCP 指向中心）③ 打开 AI 工具直接工作
 - **遗留**：① Windows 防火墙 8787 入站规则需管理员手动添加（`netsh advfirewall firewall add rule name="TeamWork Server 8787" dir=in action=allow protocol=TCP localport=8787`）——本机→本机 IP 已验证可达，跨机需此规则；② 飞书身份现状：user_token 已过期（v2 无 refresh_token）→ **新用户 join 已有工作组不受影响**（join 不建目录），仅「创建新工作组」需 Leader 先 `cd demo && npm run user-auth`（2h 窗口）或等 tenant 权限审批发布；③ 上一节 feishu-setup 凭据分发脚本转为备用方案（中心化模式下不再需要给新用户发凭据）
-- **终验（权限开通后，2026-10-14 下午）**：Leader 在飞书后台为**新应用**（`cli_aa46d1...`，写入 teamwork/.env）开通全部云文档权限 → tenant 通道实测**全通**：tenant_token / files.list（**99991672 已消除**）/ create_folder / delete。端到端：临时身份真实创建工作组 `ws-f4a298d4` → server 返回 `feishuFolder=VSFXf6Poyl...` → 飞书侧对账 `TeamWork-Demo/FeishuVerifyTest` 目录真实存在 → `POST /api/ws/:wsId/delete` 解散（`feishuDelete:"async"` 异步删飞书目录也通）→ 全部清理干净。**user_token 2h 窗口依赖就此终结**
-- **统一管理达成**：tenant 建的目录归**应用空间**（非个人空间）→ 用 `permissionMember.batchCreate` 把根目录 `TeamWork-Demo`（`GpLsfKxo...`）共享给 Leader（`full_access`）——Leader 飞书客户端「共享与我」可见全部工作组目录并完全管理；后续新建子目录自动继承可见性。**API 坑记录**：① 端点是 `/drive/v1/permissions/{token}/members/batch_create` + body `{members:[{member_type:'openid'|'email', member_id, perm}]}`（member_type 枚举**无 'user'**——传错报 99992402）；② 邮箱换 open_id 用 `POST /contact/v3/users/batch_get_id` + body `{emails:[...]}`（响应字段 `user_list` 非 users_list；GET find_by_email 是废弃路径）
+- **终验（权限开通后，2026-10-14 下午）**：Leader 在飞书后台为**新应用**（`cli_xxxx...`，写入 teamwork/.env）开通全部云文档权限 → tenant 通道实测**全通**：tenant_token / files.list（**99991672 已消除**）/ create_folder / delete。端到端：临时身份真实创建工作组 `ws-f4a298d4` → server 返回 `feishuFolder=<folder-token>` → 飞书侧对账 `TeamWork-Demo/FeishuVerifyTest` 目录真实存在 → `POST /api/ws/:wsId/delete` 解散（`feishuDelete:"async"` 异步删飞书目录也通）→ 全部清理干净。**user_token 2h 窗口依赖就此终结**
+- **统一管理达成**：tenant 建的目录归**应用空间**（非个人空间）→ 用 `permissionMember.batchCreate` 把根目录 `TeamWork-Demo`（`<folder-token>`）共享给 Leader（`full_access`）——Leader 飞书客户端「共享与我」可见全部工作组目录并完全管理；后续新建子目录自动继承可见性。**API 坑记录**：① 端点是 `/drive/v1/permissions/{token}/members/batch_create` + body `{members:[{member_type:'openid'|'email', member_id, perm}]}`（member_type 枚举**无 'user'**——传错报 99992402）；② 邮箱换 open_id 用 `POST /contact/v3/users/batch_get_id` + body `{emails:[...]}`（响应字段 `user_list` 非 users_list；GET find_by_email 是废弃路径）
 - **重启副作用与新坑**：① session token 内存态——server 重启全员 token 失效（浏览器重登录即恢复，localStorage clientId 仍在；MCP 端 fail-open 引导重新 join）；② **`teamwork start`（全局 CLI）spawn 的是全局包副本**（cwd=全局目录）→ 状态/凭据与源码目录**分歧**（曾出现 0 用户/0 工作组的全新状态）——**从源码目录跑才是正解**（`cd teamwork && npm start` 或 `node server/index.js`，cwd=源码读 .env+state）——遗留待办：统一运行入口（长期方案=状态迁到全局副本 or CLI 加 --dir）
 - **分发物状态**：`dist/feishu-setup.mjs`（凭据分发版）**作废**——中心化 + tenant 全通后新用户零凭据（上上节方案转为备用）
 - **同步范围**：源码 4 文件 + 全局 CLI 副本 3 文件（bin/mcp/scripts 已 copy，`teamwork version` v1.0.1 验证过）；npm 发版后随包固化

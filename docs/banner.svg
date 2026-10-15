@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="384" viewBox="0 0 1280 384" role="img" aria-labelledby="bt dc">
+  <title id="bt">TeamWork —— 多用户 AI 协作系统</title>
+  <desc id="dc">把「N 个人 × N 个 AI 会话」变成一条有共享记忆的流水线：任务协作、共享记忆、共识约束、链路继承、飞书云同步</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070B16"/>
+      <stop offset=".5" stop-color="#0B1226"/>
+      <stop offset="1" stop-color="#090D1C"/>
+    </linearGradient>
+    <linearGradient id="tg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7DD3FC"/>
+      <stop offset=".52" stop-color="#818CF8"/>
+      <stop offset="1" stop-color="#C084FC"/>
+    </linearGradient>
+    <linearGradient id="eg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#818CF8"/>
+    </linearGradient>
+    <radialGradient id="gC" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gP" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#A855F7" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#A855F7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gB" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#3B82F6" stop-opacity=".20"/>
+      <stop offset="1" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="1.6" cy="1.6" r="1.6" fill="#1D2A4A"/>
+    </pattern>
+    <filter id="b14" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <filter id="b5" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <clipPath id="fr"><rect width="1280" height="384" rx="26"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#fr)">
+    <rect width="1280" height="384" fill="url(#bg)"/>
+
+    <!-- 呼吸极光 -->
+    <circle cx="210" cy="70" r="300" fill="url(#gC)">
+      <animate attributeName="opacity" values=".7;1;.7" dur="7s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1100" cy="330" r="330" fill="url(#gP)">
+      <animate attributeName="opacity" values="1;.7;1" dur="8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="640" cy="190" r="400" fill="url(#gB)"/>
+
+    <!-- 点阵网格 + 斜向光带 -->
+    <rect width="1280" height="384" fill="url(#dots)" opacity=".5"/>
+    <path d="M -80 350 L 460 -60" stroke="#38BDF8" stroke-width="70" opacity=".05"/>
+    <path d="M 1360 340 L 830 -60" stroke="#A855F7" stroke-width="56" opacity=".05"/>
+
+    <!-- 星芒 -->
+    <g stroke="#7DD3FC" stroke-width="2" opacity=".4" stroke-linecap="round">
+      <path d="M320 64 v10 M315 69 h10"/>
+      <path d="M960 64 v10 M955 69 h10"/>
+      <path d="M300 330 v8 M296 334 h8"/>
+      <path d="M952 320 v8 M948 324 h8"/>
+    </g>
+
+    <!-- 左：协作节点图（Leader 中心 + 成员 + 数据包流动） -->
+    <g stroke="url(#eg)" stroke-opacity=".5" stroke-width="1.6">
+      <line x1="150" y1="168" x2="258" y2="96"/>
+      <line x1="150" y1="168" x2="84"  y2="262"/>
+      <line x1="150" y1="168" x2="252" y2="282"/>
+      <line x1="258" y1="96"  x2="252" y2="282"/>
+      <line x1="84"  y1="262" x2="252" y2="282"/>
+      <line x1="84"  y1="262" x2="170" y2="350"/>
+      <line x1="252" y1="282" x2="170" y2="350"/>
+    </g>
+    <circle cx="150" cy="168" r="24" fill="#22D3EE" opacity=".16" filter="url(#b5)">
+      <animate attributeName="opacity" values=".12;.3;.12" dur="2.6s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="150" cy="168" fill="none" stroke="#22D3EE" stroke-width="1.4">
+      <animate attributeName="r" values="14;44" dur="2.6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".55;0" dur="2.6s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="150" cy="168" r="13" fill="#22D3EE" stroke="#E0F2FE" stroke-opacity=".85" stroke-width="1.6"/>
+    <circle cx="258" cy="96"  r="8" fill="#818CF8"/>
+    <circle cx="84"  cy="262" r="8" fill="#38BDF8"/>
+    <circle cx="252" cy="282" r="8" fill="#C084FC"/>
+    <circle cx="170" cy="350" r="6" fill="#22D3EE" opacity=".85"/>
+    <circle r="3" fill="#E0F2FE">
+      <animateMotion dur="2.8s" repeatCount="indefinite" path="M150 168 L258 96"/>
+    </circle>
+    <circle r="3" fill="#C084FC">
+      <animateMotion dur="3.4s" begin="-1.2s" repeatCount="indefinite" path="M252 282 L84 262"/>
+    </circle>
+
+    <!-- 右：协作节点图（镜像） -->
+    <g stroke="url(#eg)" stroke-opacity=".5" stroke-width="1.6">
+      <line x1="1130" y1="168" x2="1022" y2="96"/>
+      <line x1="1130" y1="168" x2="1196" y2="262"/>
+      <line x1="1130" y1="168" x2="1028" y2="282"/>
+      <line x1="1022" y1="96"  x2="1028" y2="282"/>
+      <line x1="1196" y1="262" x2="1028" y2="282"/>
+      <line x1="1196" y1="262" x2="1110" y2="350"/>
+      <line x1="1028" y1="282" x2="1110" y2="350"/>
+    </g>
+    <circle cx="1130" cy="168" r="24" fill="#A855F7" opacity=".16" filter="url(#b5)">
+      <animate attributeName="opacity" values=".12;.3;.12" dur="2.6s" begin="-1.3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1130" cy="168" fill="none" stroke="#C084FC" stroke-width="1.4">
+      <animate attributeName="r" values="14;44" dur="2.6s" begin="-1.3s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".55;0" dur="2.6s" begin="-1.3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1130" cy="168" r="13" fill="#A78BFA" stroke="#F5F3FF" stroke-opacity=".85" stroke-width="1.6"/>
+    <circle cx="1022" cy="96"  r="8" fill="#22D3EE"/>
+    <circle cx="1196" cy="262" r="8" fill="#818CF8"/>
+    <circle cx="1028" cy="282" r="8" fill="#38BDF8"/>
+    <circle cx="1110" cy="350" r="6" fill="#C084FC" opacity=".85"/>
+    <circle r="3" fill="#E0F2FE">
+      <animateMotion dur="3s" begin="-1s" repeatCount="indefinite" path="M1130 168 L1022 96"/>
+    </circle>
+    <circle r="3" fill="#7DD3FC">
+      <animateMotion dur="3.6s" begin="-2.2s" repeatCount="indefinite" path="M1028 282 L1196 262"/>
+    </circle>
+
+    <!-- 眉题 -->
+    <text x="640" y="97" text-anchor="middle" font-family="Arial, 'Segoe UI', sans-serif" font-size="17" font-weight="600" letter-spacing="8" fill="#67E8F9">MULTI-USER AI COLLABORATION</text>
+    <line x1="352" y1="91" x2="392" y2="91" stroke="#22D3EE" opacity=".55" stroke-width="2" stroke-linecap="round"/>
+    <line x1="888" y1="91" x2="928" y2="91" stroke="#22D3EE" opacity=".55" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- 主标题：光晕层 + 渐变层 -->
+    <text x="640" y="212" text-anchor="middle" font-family="Arial, 'Segoe UI', sans-serif" font-size="112" font-weight="900" letter-spacing="3" fill="#38BDF8" opacity=".5" filter="url(#b14)">TeamWork</text>
+    <text x="640" y="212" text-anchor="middle" font-family="Arial, 'Segoe UI', sans-serif" font-size="112" font-weight="900" letter-spacing="3" fill="url(#tg)">TeamWork</text>
+
+    <!-- 中文标语 -->
+    <text x="640" y="262" text-anchor="middle" font-family="'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', Arial, sans-serif" font-size="24" font-weight="500" fill="#E2E8F0">把「N 个人 × N 个 AI 会话」变成一条有共享记忆的流水线</text>
+
+    <!-- 特性芯片 -->
+    <g font-family="Arial, 'Segoe UI', sans-serif" font-size="15" font-weight="600">
+      <rect x="365" y="300" width="118" height="36" rx="18" fill="#94A3B8" fill-opacity=".08" stroke="#334155"/>
+      <text x="424" y="323" text-anchor="middle" fill="#7DD3FC" letter-spacing="1">v1.0.14</text>
+      <rect x="499" y="300" width="280" height="36" rx="18" fill="#94A3B8" fill-opacity=".08" stroke="#334155"/>
+      <text x="639" y="323" text-anchor="middle" fill="#E2E8F0">TRAE · Claude Code · Cursor · MCP</text>
+      <rect x="795" y="300" width="120" height="36" rx="18" fill="#94A3B8" fill-opacity=".08" stroke="#334155"/>
+      <text x="855" y="323" text-anchor="middle" fill="#C4B5FD">飞书云同步</text>
+    </g>
+    <line x1="520" y1="366" x2="760" y2="366" stroke="url(#tg)" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+  </g>
+</svg>

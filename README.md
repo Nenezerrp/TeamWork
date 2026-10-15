@@ -1,8 +1,6 @@
 <div align="center">
 
-# 🤝 TeamWork
-
-**多用户 AI 协作系统 —— 把「N 个人 × N 个 AI 会话」变成一条有共享记忆的流水线**
+<img src="docs/banner.svg" alt="TeamWork —— 多用户 AI 协作系统：把「N 个人 × N 个 AI 会话」变成一条有共享记忆的流水线" width="100%">
 
 [![GitHub release](https://img.shields.io/badge/release-v1.0.14-blue)](https://github.com/Nenezerrp/TeamWork/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)

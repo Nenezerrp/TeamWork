@@ -37,9 +37,9 @@ function _credFallback() {
   return null;
 }
 const _cred = _credFallback();
-// ★ v1.0.5：内置默认凭据（企业内部工具——README/INSTALL 已明文分发同值，内嵌使新成员「装完即用」：
-//   tenant 通道零配置可用；个人身份模式（feishu-auth）仍需飞书后台可用范围白名单 + 用户主动授权）
-const BUILTIN_APP_ID = 'cli_aa46d13079b99bc2';
+// ★ 公开发布版：内置凭据已移除（appSecret 原值脱敏）——用户自备飞书企业自建应用，通过
+//   .env / teamwork feishu-auth / ~/.teamwork/feishu.json 配置；配置步骤见 docs/getting-started.md「飞书接入」
+const BUILTIN_APP_ID = '';   // 公开版无内置默认——自备应用自行配置
 const BUILTIN_APP_SECRET = ''; // 公开发布版已移除内置凭据——请通过 .env / feishu-auth / ~/.teamwork/feishu.json 配置自己的飞书应用凭据
 const APP_ID = process.env.FEISHU_APP_ID || (_cred && _cred.appId) || BUILTIN_APP_ID;
 const APP_SECRET = process.env.FEISHU_APP_SECRET || (_cred && _cred.appSecret) || BUILTIN_APP_SECRET;
@@ -48,7 +48,7 @@ const USER_TOKEN_PATH = process.env.TEAMWORK_USER_TOKEN_PATH ||
 // ★ v4.7 用户身份：共享根目录显式 token（Leader 指定目录，如应用空间的 TeamWork-Demo）
 // 成员的个人身份（user_access_token）从"我的空间"发现不了它 → 必须显式配置，全员在其下建/搜/删工作组目录
 // ★ v4.7.3：rootFolder 一并兜底自 feishu.json（feishu-auth --root-folder 分发）——全局安装无 .env 时缺它则建组/搜组必失败
-const ROOT_FOLDER = process.env.FEISHU_ROOT_FOLDER || (_cred && _cred.rootFolder) || 'GpLsfKxo4lYcludu39UcB2GTnrf'; // 尾端内置默认（v1.0.5，同凭据）
+const ROOT_FOLDER = process.env.FEISHU_ROOT_FOLDER || (_cred && _cred.rootFolder) || ''; // 公开版无内置默认（v1.0.14 脱敏）：自备应用自行配置；空 = rootFolderToken() 按名称在操作身份可达的根空间自动发现/创建
 
 // ---------- 令牌桶（对齐 L0 F5）----------
 function makeBucket(qps) { return { qps, tokens: qps, last: Date.now() }; }
@@ -884,10 +884,10 @@ export async function diagnose() {
     const p = path.join(os.homedir(), '.teamwork', 'feishu.json');
     const j = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
     if (j.appId && j.appSecret) { fileUsed = true; r.feishuJson = p; r.fileAppId = j.appId; }
-    else r.feishuJsonBad = p + '（字段缺失——会被忽略，自动回退内置）';
+    else r.feishuJsonBad = p + '（字段缺失——会被忽略）';
   } catch { r.feishuJson = null; }
-  r.source = envSet ? '环境变量 FEISHU_APP_ID/SECRET' : (fileUsed ? `feishu.json（${r.feishuJson}）` : '内置凭据（v1.0.5+ 兜底）');
-  if (fileUsed && r.fileAppId !== BUILTIN_APP_ID)
+  r.source = envSet ? '环境变量 FEISHU_APP_ID/SECRET' : (fileUsed ? `feishu.json（${r.feishuJson}）` : '未配置（公开版无内置凭据——参照 .env.example 或 docs/getting-started.md「飞书接入」配置）');
+  if (BUILTIN_APP_ID && fileUsed && r.fileAppId !== BUILTIN_APP_ID)
     r.advice.push('feishu.json 的 appId 与内置不同——若为 feishu-auth 误写坏值会压过内置兜底；删除该文件后 teamwork stop --force && teamwork start 即回退内置');
   // ② Node 全局 fetch（getTenantToken 等全部依赖——Node < 18 直接 ReferenceError，落入笼统 502）
   if (!r.fetchOk) {
@@ -901,7 +901,7 @@ export async function diagnose() {
     const j = await res.json();
     if (j.code !== 0) {
       r.err = `tenant_token 获取失败 code=${j.code}: ${j.msg}`;
-      r.advice.push('10003/10014=app_secret 错误，99991663=app_id 无效——若来源是 feishu.json 请删它回退内置；内置值也报错则联系 Leader 核对');
+      r.advice.push('10003/10014=app_secret 错误，99991663=app_id 无效——核对 .env 或 ~/.teamwork/feishu.json 中的凭据（公开版无内置兜底，凭据需自备，见 docs/getting-started.md「飞书接入」）');
     } else r.tenant = `ok（有效期 ${j.expire}s）`;
   } catch (e) {
     r.err = `网络无法访问 open.feishu.cn: ${e.message}`;

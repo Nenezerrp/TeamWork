@@ -109,15 +109,21 @@ ${includeDeps ?
   node bin/teamwork.js version
   → TeamWork v${version}
 
-4 步开始:
-  1. teamwork start          → 浏览器自动打开登录页
-  2. 输入登录 ID → 点「进入」→ 工作组大厅
+5 步开始:
+  1. 接入飞书（必需——创建工作组的前置）:
+     a. 飞书开放平台创建「企业自建应用」→ 权限管理开通 drive:drive + docx:document（应用身份列）→ 创建版本并发布
+     b. 安全设置 → 重定向 URL 添加 http://localhost:9916/callback
+     c. 安装目录创建 .env（参照 .env.example）填入 FEISHU_APP_ID / FEISHU_APP_SECRET
+        （FEISHU_ROOT_FOLDER 不配置时，应用身份自动在其云空间创建 TeamWork-Demo/ 根目录）
+     完整步骤见包内 README.md 与 docs/getting-started.md「飞书接入」
+  2. teamwork start          → 浏览器自动打开登录页
+  3. 输入登录 ID → 点「进入」→ 工作组大厅
      → 「+ 创建工作组」（Leader，填名称+密码）或「加入工作组」（成员，填组名+密码）
-     （以上即可用——云端同步走应用身份，凭据已内置包内，零配置）
-  3. teamwork setup          → 自动检测本机 AI 工具并写入 MCP 配置，完成
-  4. 可选增强——绑定个人飞书身份（云文档归属你本人）:
-     teamwork feishu-auth --app-id cli_aa46d13079b99bc2 --app-secret <你的飞书AppSecret> --root-folder GpLsfKxo4lYcludu39UcB2GTnrf
-     → 浏览器自动打开 → 用你自己的飞书账号登录授权 → 完成
+     （工作组飞书目录自动创建/云端自动恢复，无需手动建目录）
+  4. teamwork setup          → 自动检测本机 AI 工具并写入 MCP 配置，完成
+  5. 可选增强——绑定个人飞书身份（云文档归属你本人）:
+     teamwork feishu-auth --app-id <你的AppID> --app-secret <你的飞书AppSecret> [--root-folder <根目录token>]
+     → 浏览器自动打开 → 用你自己的飞书账号登录授权 → 完成（根目录自动共享给你，无需手动操作）
      （前置：管理员需先在飞书开放平台把你加入应用「可用范围」）
 
 数据落位: 全部存 ~/.teamwork/（state/token/凭据/日志）——升级安装包不丢数据

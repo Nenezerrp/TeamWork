@@ -85,9 +85,14 @@ AI 会话是天然孤岛——每个人的 AI 不知道别人做了什么。Team
 
 ## 🚀 快速开始
 
-前置：[Node.js >= 18](https://nodejs.org)。从 [Releases](https://github.com/Nenezerrp/TeamWork/releases) 下载 `TeamWork.zip` 解压后：
+前置：[Node.js >= 18](https://nodejs.org) + 一个自备的飞书企业自建应用（见下方第 0 步）。从 [Releases](https://github.com/Nenezerrp/TeamWork/releases) 下载 `TeamWork.zip` 解压后：
 
 ```bash
+# 0. 接入飞书（必需，约 5 分钟）——飞书云文档是跨机共享层，创建工作组的前置
+#    开放平台自建应用 → 开通云文档权限（drive:drive / docx:document）→ 创建版本发布
+#    → 安装目录 .env 填 FEISHU_APP_ID / FEISHU_APP_SECRET（根目录可不配，自动创建）
+#    完整步骤：docs/getting-started.md「飞书接入」
+
 # 1. 安装 CLI
 npm install -g ./teamwork-cli-1.0.14.tgz
 teamwork version        # → TeamWork v1.0.14
@@ -96,13 +101,14 @@ teamwork version        # → TeamWork v1.0.14
 teamwork start
 
 # 3. 仪表盘创建 / 加入工作组（Leader 填名称+密码；成员凭组名+密码加入）
-#    → 飞书云端自动恢复全部任务/记忆
+#    → 工作组的飞书目录（/TeamWork-Demo/<组名>/）由系统自动创建，无需手动建目录
+#    → 加入已有工作组则自动从飞书云端恢复全部任务/记忆
 
 # 4. 一键配置本机 AI 工具 MCP（自动检测 TRAE / Claude Code / Cursor）
 teamwork setup
 ```
 
-完成后打开 AI 工具即可协作。升级 / 远程访问 / 飞书绑定等见 [docs/getting-started.md](docs/getting-started.md)。
+完成后打开 AI 工具即可协作。升级 / 远程访问 / 个人身份绑定等见 [docs/getting-started.md](docs/getting-started.md)。
 
 ## 🎬 70 分钟实战演示（双端剧本）
 

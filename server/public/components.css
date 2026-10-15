@@ -1,0 +1,38 @@
+/* components.css - 表单/按钮/卡片/工作流/空状态 */
+.form-card{max-width:480px;margin:3rem auto;background:var(--pnl);backdrop-filter:blur(14px);border:1px solid var(--pb);border-radius:16px;padding:2rem}
+.form-card h1{font-size:var(--fsXL);background:var(--g);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:.5rem}
+.form-card .sub{color:var(--mut);font-size:var(--fsS);margin-bottom:1.5rem}
+.fg{margin-bottom:1rem}
+.fg label{display:block;font-size:var(--fsX);color:var(--mut);margin-bottom:.3rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.fg input,.fg select{width:100%;padding:.6rem .8rem;border:1px solid var(--pb);border-radius:10px;background:rgba(255,255,255,.04);color:var(--txt);font-size:var(--fs);outline:none}
+.fg select option,select option{background:#12152a;color:#e8ebf7} /* 修复：原生 option 列表白底白字看不清——显式深底浅字 */
+.fg input:focus,.fg select:focus{border-color:#6366f1}.fg input::placeholder{color:var(--dim)}
+.chk{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;font-size:var(--fsS);color:var(--mut);cursor:pointer}
+.chk input[type=checkbox]{accent-color:#6366f1;width:16px;height:16px}
+.btn{display:inline-block;padding:.6rem 1.5rem;border:none;border-radius:10px;font-size:var(--fs);font-weight:700;cursor:pointer;transition:.2s;text-decoration:none}
+.btn-p{background:var(--g);color:#fff}.btn-p:hover{opacity:.85;transform:translateY(-1px)}
+.btn-s{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid var(--pb)}.btn-s:hover{background:rgba(255,255,255,.1)}
+.err-msg{color:#f43f5e;font-size:var(--fsS);margin-top:.5rem;min-height:1.2rem;padding:.5rem .8rem;border-radius:8px;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);display:none;align-items:center;gap:.4rem}
+.err-msg.show{display:flex;animation:shake .3s ease-in-out}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.ws-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.ws-card{background:var(--pnl);backdrop-filter:blur(14px);border:1px solid var(--pb);border-radius:14px;padding:1.2rem;transition:.2s;cursor:pointer;position:relative;overflow:hidden}
+.ws-card:hover{border-color:rgba(99,102,241,.4);transform:translateY(-2px);box-shadow:0 8px 30px rgba(99,102,241,.15)}
+.ws-card .wn{font-size:var(--fsL);font-weight:700;margin-bottom:.3rem}
+.ws-card .wr{font-size:var(--fsX);color:var(--mut)}
+.ws-badge{position:absolute;top:.8rem;right:.8rem;font-size:var(--fsX);font-weight:700;padding:.15rem .6rem;border-radius:99px}
+.ws-badge.leader{color:#34d399;background:rgba(52,211,153,.12)}
+.ws-badge.member{color:#38bdf8;background:rgba(56,189,248,.12)}
+.ws-badge.dormant{color:#fbbf24;background:rgba(251,191,36,.12)}
+.ws-stats{display:flex;gap:1rem;margin-top:.8rem;font-size:var(--fsX);color:var(--dim)}
+.ws-stats b{color:var(--mut)}
+.dash-head{display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;flex-wrap:wrap}
+.dash-head h1{font-size:var(--fsXL);background:var(--g);-webkit-background-clip:text;background-clip:text;color:transparent}
+.emp{text-align:center;padding:3rem 1rem;color:var(--mut)}
+.emp .ee{font-size:56px;display:block;margin-bottom:1rem;animation:fy 3s ease-in-out infinite}
+@keyframes fy{50%{transform:translateY(-10px) rotate(4deg)}}
+.emp .et{font-size:var(--fsL);font-weight:700;color:var(--txt);margin-bottom:.5rem}
+.emp .eh{font-size:var(--fsS);line-height:1.8}
+.emp code{background:rgba(139,92,246,.14);color:#c4b5fd;padding:.15rem .5rem;border-radius:6px;font-size:var(--fsX)}
+footer{flex:none;display:flex;gap:1.5rem;justify-content:center;padding:.6rem;font-size:var(--fsX);color:var(--dim);border-top:1px solid var(--pb);z-index:1;background:rgba(7,9,15,.6)}
+footer b{color:var(--mut);font-variant-numeric:tabular-nums;font-size:var(--fsS)}

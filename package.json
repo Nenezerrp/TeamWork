@@ -1,0 +1,47 @@
+{
+  "name": "@teamwork/cli",
+  "version": "1.0.14",
+  "description": "TeamWork — 多用户 AI 协作系统：npm 安装 → 仪表盘加入工作组 → AI 工具全自动静默协作",
+  "type": "module",
+  "bin": {
+    "teamwork": "./bin/teamwork.js"
+  },
+  "scripts": {
+    "start": "node scripts/dev-start.mjs",
+    "mcp": "node mcp/index.js",
+    "setup": "node scripts/setup.js",
+    "observe": "node scripts/observe-hook.mjs",
+    "setup-trae": "node scripts/setup.js --trae",
+    "build": "node scripts/build-package.mjs"
+  },
+  "files": [
+    "bin/",
+    "server/",
+    "mcp/",
+    "scripts/",
+    "public/",
+    "docs/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ai",
+    "collaboration",
+    "mcp",
+    "multi-agent",
+    "teamwork",
+    "trae",
+    "claude-code",
+    "cursor",
+    "feishu",
+    "memory"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "dotenv": "^18.0.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

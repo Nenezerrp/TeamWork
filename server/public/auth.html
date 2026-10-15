@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TeamWork · 登录</title>
+<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/components.css">
+</head>
+<body>
+<div class="st"></div><div class="b b1"></div><div class="b b2"></div>
+<div class="view" id="app" style="display:flex;align-items:center;justify-content:center">
+<div class="form-card">
+<h1>✦ TeamWork</h1>
+<div class="sub">输入你的名字，开始多 AI 协作</div>
+<div class="fg"><label>登录 ID（临时身份，无需密码）</label>
+<input id="a-name" placeholder="如 alice" autofocus onkeydown="if(event.key==='Enter')doLogin()"></div>
+<details style="margin-bottom:1rem">
+<summary style="color:var(--mut);font-size:var(--fsS);cursor:pointer;padding:.4rem 0">🤖 AI Provider 配置（可选）</summary>
+<div style="padding:.6rem 0 0">
+<div class="fg"><label>Provider</label><select id="a-provider"><option value="claude">claude</option><option value="gemini">gemini</option><option value="openrouter">openrouter</option><option value="openai-compatible">openai-compatible</option></select></div>
+<div class="fg"><label>Base URL</label><input id="a-baseurl" placeholder="https://api.anthropic.com"></div>
+<div class="fg"><label>API Key</label><input id="a-key" type="password" placeholder="sk-..."></div>
+<div class="fg"><label>Model ID</label><input id="a-model" placeholder="claude-haiku-4-5"></div>
+</div></details>
+<div class="err-msg" id="a-err"></div>
+<button class="btn btn-p" style="width:100%" onclick="doLogin()">进入</button>
+</div></div>
+<script src="/common.js"></script>
+<script>
+// 已登录则跳转大厅
+const t=localStorage.getItem('tw-token');
+if(t)fetch('/api/me',{headers:{Authorization:'Bearer '+t}}).then(r=>{if(r.ok)location.href='/lobby'}).catch(()=>{});
+function doLogin(){
+const name=$('a-name').value.trim();
+if(!name){$('a-err').textContent='请输入登录 ID';return;}
+const aiConfig={provider:$('a-provider').value,baseUrl:$('a-baseurl').value,apiKey:$('a-key').value,modelId:$('a-model').value};
+fetch('/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,aiConfig,_clientId:getClientId()})})
+.then(r=>r.json()).then(r=>{
+if(r.error){$('a-err').textContent=r.error;return;}
+localStorage.setItem('tw-token',r.token);
+localStorage.setItem('tw-mcp-path',r.mcpPath||'');
+setMyInfo(name);
+location.href='/lobby';
+}).catch(e=>$('a-err').textContent='网络错误：'+e.message);
+}
+</script>
+</body>
+</html>

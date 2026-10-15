@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TeamWork · 工作组</title>
+<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/components.css">
+<style>
+#nm-tabs{display:flex;gap:.4rem;flex-wrap:wrap;flex:none}
+#nm-tools{display:flex;gap:.4rem;flex-wrap:wrap;flex:none}
+#nm-tools .btn{padding:.35rem .7rem;font-size:var(--fsS)}
+.nm-who{font-size:11px;fill:var(--dim)}
+.nm-lab{font-size:11px;fill:var(--mut)}
+.nm-pop{animation:nmpop .35s ease}
+#svg.nm-quiet .nm-pop{animation:none} /* ★ v4.6.6 视图变换（平移/缩放/拖节点）重绘不重放入场动画 */
+#svg{position:static;inset:auto;width:auto;height:auto;pointer-events:auto;user-select:none;-webkit-user-select:none;-ms-user-select:none;touch-action:none} /* ★ v4.6.8 根因修复：全局 style.css 的 #svg 规则（lobby 背景装饰用：absolute 铺满 + pointer-events:none）误伤本页地图——地图 SVG 从未收到过任何鼠标事件，拖动/平移/缩放自 v4.6.6 起从未生效；此处覆盖恢复 flex 流布局（不遮工具栏）+ 开启鼠标交互 */
+#svg.nm-dragging,#svg.nm-dragging *{cursor:grabbing!important} /* ★ v4.6.7 拖动中光标反馈 */
+@keyframes nmpop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+#nm-detail{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;backdrop-filter:blur(4px)}
+#nm-detail .form-card{margin:4rem auto;max-width:560px;max-height:75vh;overflow-y:auto}
+#nd-title{font-size:var(--fsL)}
+/* ★ 统一 UI 组件（v4.3 UI 整改）：页面内弹框 + Toast，风格对齐 .form-card/.fg/.err-msg */
+#nm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:120;backdrop-filter:blur(4px)}
+#nm-modal .form-card{margin:6rem auto;max-width:460px;padding:1.6rem}
+#nm-m-body .fg{margin-bottom:.9rem}
+#nm-m-txt{font-size:var(--fsS);line-height:1.8;color:var(--mut);white-space:pre-wrap;word-break:break-word;max-height:46vh;overflow-y:auto}
+#nm-toast{position:fixed;top:70px;right:18px;z-index:130;display:flex;flex-direction:column;gap:.5rem;pointer-events:none}
+.nm-toast-it{background:rgba(15,18,35,.92);border:1px solid var(--pb);border-left:3px solid #34d399;border-radius:.6rem;padding:.7rem 1rem;font-size:var(--fsS);color:var(--txt);max-width:340px;box-shadow:0 8px 30px rgba(0,0,0,.4);animation:nmtoi .25s ease}
+.nm-toast-it.err{border-left-color:#f43f5e}
+@keyframes nmtoi{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+#w-consensus{font-size:var(--fsS)}
+/* ★ 侧栏滚动区（Memory/Skill，风格一致：细轨道半透明滑块）*/
+.nm-scroll{max-height:200px;overflow-y:auto;padding-right:.25rem;flex:none}
+.nm-scroll::-webkit-scrollbar{width:5px}
+.nm-scroll::-webkit-scrollbar-track{background:transparent}
+.nm-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
+.nm-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28)}
+.nm-mem-it{padding:.4rem .45rem;border-radius:.5rem;cursor:pointer;transition:.15s;display:flex;gap:.45rem;align-items:flex-start}
+.nm-mem-it:hover{background:rgba(255,255,255,.05)}
+.nm-mem-dot{width:7px;height:7px;border-radius:99px;margin-top:6px;flex:none}
+.nm-mem-tt{font-size:var(--fsX);color:var(--mut);line-height:1.45;overflow:hidden}
+.nm-mem-mt{font-size:var(--fsX);color:var(--dim);white-space:nowrap}
+.nm-skill-it{padding:.45rem .5rem;border-radius:.5rem;cursor:pointer;transition:.15s;font-size:var(--fsX);color:var(--mut);border-bottom:1px solid rgba(255,255,255,.05)}
+.nm-skill-it:hover{background:rgba(255,255,255,.05)}
+.nm-count-badge{font-size:var(--fsX);color:var(--dim);font-weight:400}
+/* ★ v4.3.2 地图选项卡 + 底部节点信息栏 */
+.nm-tab{padding:.25rem .85rem;font-size:var(--fsS);border-radius:99px;border:1px solid var(--pb);background:rgba(255,255,255,.04);color:var(--mut);cursor:pointer;transition:.15s;font-weight:600}
+.nm-tab:hover{background:rgba(255,255,255,.08)}
+.nm-tab.active{background:linear-gradient(135deg,#6366f1,#22d3ee);color:#fff;border-color:transparent}
+#nm-info-bar{position:absolute;left:0;right:0;bottom:0;min-height:56px;background:rgba(15,18,35,.92);backdrop-filter:blur(10px);border-top:1px solid var(--pb);padding:.55rem .9rem;display:flex;gap:.9rem;align-items:center;flex-wrap:wrap;z-index:9;font-size:var(--fsS)}
+#nm-info-bar .ib-emoji{font-size:22px}
+#nm-info-bar .ib-title{font-weight:700;color:var(--txt);max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#nm-info-bar .ib-meta{color:var(--dim);font-size:var(--fsX)}
+#nm-info-bar .btn{padding:.3rem .7rem;font-size:var(--fsX)}
+/* ★ v4.6.10 徽章归位（双重叠字根因）：components.css 的 .ws-badge 是 lobby 卡片右上角角标（position:absolute;top/right 固定）——本页将其复用为行内徽章（详情报告 meta 行 / 底部信息栏 / 共识 / 检索结果）却未覆盖定位 → 全部徽章脱离文档流叠到最近定位祖先的右上角同一点：①详情弹窗「共识 v0」「📍」等徽章全部飞到弹窗右上角同坐标字符重叠；②信息栏「待同步/☁ 已上传」徽章叠在行尾「✕ 取消」按钮上。本页覆盖为流式胶囊（含中性底色，inline 样式仍可覆盖），lobby 的角标用法不受影响 */
+.ws-badge{position:static;display:inline-block;white-space:nowrap;background:rgba(255,255,255,.07);color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="st"></div><div class="b b1"></div><div class="b b2"></div>
+<header>
+<a class="logo" href="/lobby"><span class="s">✦</span> TEAMWORK</a>
+<span class="pill" id="h-user"></span>
+<span class="pill ld" id="h-phase"><span id="h-phase-text">OPEN</span></span>
+<div class="sp"></div>
+<button class="btn btn-s" onclick="location.href='/lobby'" style="padding:.3rem 1rem;font-size:var(--fsS)">← 返回大厅</button>
+</header>
+<div class="view" id="app" style="display:grid;grid-template-columns:250px 1fr 300px;gap:1rem;height:calc(100vh - 58px);overflow:hidden;padding:1rem">
+<aside class="pn" style="overflow-y:auto"><h2>✦ 成员</h2><div id="w-members"></div>
+<h2 class="sec-h">📁 Memory <span class="nm-count-badge" id="w-mem-count">0 条</span></h2>
+<div id="w-mem-list" class="nm-scroll"></div>
+<h2 class="sec-h" onclick="showConsensus()" style="cursor:pointer">⚖️ 共识 <span style="font-size:9px;color:var(--dim)">管理</span></h2><div id="w-consensus" style="font-size:var(--fsX);color:var(--dim)">加载中…</div>
+<h2 class="sec-h">🧩 Skill</h2><div id="w-skills" class="nm-scroll" style="font-size:var(--fsX);color:var(--dim)">加载中…</div></aside>
+<section class="pn" style="position:relative;overflow:hidden;display:flex;flex-direction:column"><h2>🗺 节点地图（爆炸图 · 点击逐层披露 · 单击看信息）</h2>
+<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.1rem 0 .5rem;flex:none">
+<div id="nm-tabs">
+<button class="nm-tab active" data-tab="all" onclick="setTab('all')">🌐 全部</button>
+<button class="nm-tab" data-tab="task" onclick="setTab('task')">⚡ 任务流</button>
+<button class="nm-tab" data-tab="chain" onclick="setTab('chain')">🔗 继承链</button>
+<button class="nm-tab" data-tab="mem" onclick="setTab('mem')">💡 记忆</button>
+<button class="nm-tab" data-tab="evt" onclick="setTab('evt')">📌 事件</button>
+</div>
+<span style="flex:1"></span>
+<div id="nm-tools">
+<span class="pill" style="align-self:center;font-size:var(--fsX);padding:.2rem .55rem" title="页面版本 · 强刷（Ctrl+F5）后应显示 v4.6.12——否则浏览器缓存了旧页面">v4.6.12</span>
+          <button class="btn btn-s" onclick="fit()">⤢ 适配</button>
+          <button class="btn btn-s" onclick="resetLayout()">🧹 重置布局</button>
+<button class="btn btn-s" onclick="zoomBy(1.25)">＋</button>
+<button class="btn btn-s" onclick="zoomBy(0.8)">－</button>
+<button class="btn btn-s" onclick="expandAll()">展开全部</button>
+<button class="btn btn-s" onclick="collapseAll()">收起</button>
+<button class="btn btn-s" onclick="toggleAbandoned()">↩ 已回退</button>
+<button class="btn btn-s" onclick="showOpenEnds()">🔗 可继承末端</button>
+<button class="btn btn-s" title="功能暂停开放" onclick="uiShow('🔒 检索','当前功能权限不足（功能暂停开放）')">🔍 检索</button>
+<button class="btn btn-s" title="功能暂停开放" onclick="uiShow('🔒 云恢复','当前功能权限不足（功能暂停开放）')">☁ 云恢复</button>
+</div>
+</div>
+<svg id="svg" style="flex:1;min-height:0"></svg>
+<div id="nm-info-bar"><span class="ib-emoji">🖱</span><span class="ib-meta">滚轮缩放 · 左键拖空白平移 · 左键按住节点拖动微调位置（本机记住）· 单击显示 When·Who·What · 双击打开完整报告</span></div></section>
+<aside class="pn" style="overflow-y:auto"><h2><span class="ws-live"></span>记忆流</h2><div id="w-stream"></div></aside>
+</div>
+<footer><span>节点 <b id="f-n">0</b></span><span>在线 <b id="f-o">0</b></span><span style="opacity:.5">TEAMWORK</span></footer>
+<script src="/common.js"></script>
+<script>
+const wsId=location.pathname.split('/')[2];
+// ★ v4.6.7 自诊断（v4.6.8 沿用）：任何运行时错误显式暴露（页面底部红条 + console）——事件绑定失败立即可见，不再静默
+window.addEventListener('error',e=>{console.error('[workspace v4.6.8] 运行时错误:',e.message,'@',(e.filename||'inline')+':'+e.lineno);
+  try{const d=document.createElement('div');d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:999;background:#f43f5e;color:#fff;padding:6px 12px;font:12px/1.6 monospace';d.textContent='[v4.6.8] 脚本错误: '+e.message+' @'+e.lineno+'（F12 Console 看详情）';document.body.appendChild(d);}catch(_){}});
+window.addEventListener('unhandledrejection',e=>console.error('[workspace v4.6.8] Promise 异常:',e.reason));
+let RAW=null,TREE=null,VIEW={x:0,y:0,k:1},EXP=new Set(),SEL=null,drag=null,didFit=false,SHOW_ABANDONED=false,NMTAB='all',SEL_NODE=null;
+// ★ v4.6.6 手动节点位置（PINS）：左键拖动节点的显示位置，本机 localStorage 持久化——视图层个人偏好，不进服务器 state、不影响其他成员视图
+let PINS={};try{PINS=JSON.parse(localStorage.getItem('nm-pins:'+wsId)||'{}')||{};}catch(e){PINS={};}
+function savePins(){try{localStorage.setItem('nm-pins:'+wsId,JSON.stringify(PINS));}catch(e){}}
+const EMO={milestone:'⭐',change:'👥',summary:'📋',observation:'💡',decision:'🧭',bugfix:'🐛',feature:'✨',discovery:'🔭',gotcha:'⚠️',revert:'↩️',inherit:'🔗'};
+const TCN={milestone:'#fbbf24',change:'#38bdf8',summary:'#34d399',observation:'#a78bfa',decision:'#a78bfa',bugfix:'#f43f5e',feature:'#8b5cf6',discovery:'#38bdf8',gotcha:'#fb923c',revert:'#94a3b8',inherit:'#f472b6'};
+const TYPEN={milestone:'里程碑',change:'变动',summary:'摘要',observation:'观察',decision:'决策',bugfix:'修复',feature:'功能',discovery:'发现',gotcha:'坑',revert:'回退',inherit:'继承'};
+// ===== 数据 → 爆炸图树 =====
+function buildTree(d){
+  const nodes=d.nodes||[],tasks=d.tasks||[],byId={},stMap={},taskMap={};
+  const m=nodes.find(n=>n.type==='milestone');
+  const root={key:'n:'+(m?m.id:'__root'),node:m||{id:'__root',type:'milestone',title:'工作组创建',who:d.leader,when:0},children:[],parent:null,depth:0};
+  byId[root.key]=root;
+  for(const t of tasks){const k='t:'+t.id;
+    const tn={key:k,node:{id:t.id,type:'summary',title:'发布：'+String(t.what).slice(0,40),who:t.publisher||d.leader,when:t.when||0,taskId:t.id},children:[],parent:root,depth:1};
+    byId[k]=tn;taskMap[t.id]=tn;root.children.push(tn);}
+  for(const t of tasks)for(const s of (t.subtasks||[])){const k='s:'+s.id;
+    const sn={key:k,node:{id:s.id,type:'feature',title:String(s.what).slice(0,50),who:s.assignee||'待拾取',when:0,taskId:s.id,st:s},children:[],parent:taskMap[t.id]||root,depth:2};
+    byId[k]=sn;stMap[s.id]=sn;(taskMap[t.id]||root).children.push(sn);}
+  for(const n of nodes){if(n.type==='milestone')continue;
+    const v={key:'n:'+n.id,node:n,children:[],parent:root,depth:1};
+    if(n.taskId&&stMap[n.taskId]){v.parent=stMap[n.taskId];}
+    else if(n.taskId&&taskMap[n.taskId]){v.parent=taskMap[n.taskId];}
+    v.depth=v.parent.depth+1;byId[v.key]=v;v.parent.children.push(v);}
+  const sortRec=v=>{v.children.sort((a,b)=>((a.node.when||0)-(b.node.when||0)));v.children.forEach(sortRec);};sortRec(root);
+  return {root,byId,stMap,taskMap};
+}
+// ===== 径向布局（爆炸图：子节点围绕父节点扇形展开）+ v4.6.3 防重叠（叶子数加权扇区 + 碰撞消除兜底）=====
+function layoutAll(){const RADII=[150,135,125,115,105,100];const r=TREE.root;r.x=0;r.y=0;
+  const GROW=Math.max(1,Math.sqrt(visible().length/24)); // ★ 节点多时整体放大基础半径——源头稀释密度（200 节点实测收敛 6 轮）
+  const lw=v=>v.children.length?v.children.reduce((s,c)=>s+lw(c),0):1; // 子树叶子数=扇区权重（子树大→分到更多角度）
+  const walk=(v,a0,a1)=>{const cs=v.children;if(!cs.length)return;const tot=cs.reduce((s,c)=>s+lw(c),0);let a=a0;
+    cs.forEach(c=>{const sp=(a1-a0)*(lw(c)/tot);c.ang=a+sp/2;
+      const R=(RADII[Math.min(c.depth,RADII.length-1)]||95)*GROW;
+      c.x=v.x+Math.cos(c.ang)*R;c.y=v.y+Math.sin(c.ang)*R*0.62;
+      walk(c,a,a+sp);a+=sp;});};
+  walk(r,0,Math.PI*2);relaxOverlap();applyPins();}
+// ★ v4.6.6 自动布局 + 碰撞消除完成后，应用本机保存的手动位置（拖拽微调优先于算法排布；不可见节点的 PINS 保留，展开后仍生效）
+function applyPins(){for(const k in PINS){const p=PINS[k];if(!p||typeof p.x!=='number'||typeof p.y!=='number')continue;const v=TREE.byId[k];if(!v)continue;v.x=p.x;v.y=p.y;}}
+// ★ v4.6.3 碰撞消除：节点盒（圆 r26+展开钮 r9@右上 + 下方 who/lab 两行标签）互不重叠——MPV 最小推离迭代，root 锚定不动
+function relaxOverlap(){const vis=visible();if(vis.length<2)return;
+  const B=new Map();for(const v of vis){const t=[...String(v.node.title||'')]; // 按字符类型估宽：全角 11px / 半角 6.2px
+    const w=t.reduce((s,ch)=>s+(ch.charCodeAt(0)>255?11:6.2),0);B.set(v,{hw:Math.min(115,Math.max(31,w/2+4))});}
+  const HT=36,HB=70; // 节点盒上顶（圆顶-31+钮顶-31 取余量）/下底（标签 y56+字高≈68）
+  for(let it=0;it<1200;it++){let any=false;const OF=it<80?1.5:1; // 前 80 轮超调加速密集区膨胀
+    for(let i=0;i<vis.length;i++)for(let j=i+1;j<vis.length;j++){const a=vis[i],b=vis[j],ba=B.get(a),bb=B.get(b);
+      const dx=b.x-a.x,dy=b.y-a.y,ox=ba.hw+bb.hw;
+      if(Math.abs(dx)>=ox)continue;
+      const oy=Math.min(a.y+HB,b.y+HB)-Math.max(a.y-HT,b.y-HT);if(oy<=0)continue;
+      any=true;const pX=ox-Math.abs(dx);
+      const ma=a.key===TREE.root.key?0:1,mb=b.key===TREE.root.key?0:1,mt=ma+mb||1; // root 锚定：位移全给对方
+      if(pX<=oy){const s=(dx>=0?1:-1)*(pX+1.2)*OF/mt;if(ma)a.x-=s*ma;if(mb)b.x+=s*mb;}
+      else{const s=(dy>=0?1:-1)*(oy+1.2)*OF/mt;if(ma)a.y-=s*ma;if(mb)b.y+=s*mb;}}
+    if(!any)break;}}
+function visible(){const out=[];const walk=v=>{ if(v.node.abandoned&&!SHOW_ABANDONED)return; if(v.node.archived)return; out.push(v); // archived（共识归档）恒隐藏——区别于回退软删的开关可恢复
+  if(EXP.has(v.key))for(const c of v.children)walk(c);};walk(TREE.root);return out;}
+// ★ v4.3.2 选项卡归属：task(发布/拆解/子任务/认领/完成) chain(继承/回退/占用管理) mem(观察/记忆分享) evt(创建/进出/回收/共识生效)
+function tabOf(v){const k=v.key,n=v.node,t=n.type,ttl=String(n.title);
+  if(k.indexOf('t:')===0||k.indexOf('s:')===0)return 'task';
+  if(t==='inherit'||t==='revert')return 'chain';
+  if(t==='change')return ttl.indexOf('拾取：')===0?'task':(ttl.indexOf('加入工作组')>=0||ttl.indexOf('退出工作组')>=0?'evt':'chain');
+  if(t==='summary')return 'task'; // 发布/完成
+  if(t==='decision')return 'mem'; // decision（含 ⚖️ 共识生效）= 长线记忆——归「记忆」视图（共识经 L-1 层注入全员上下文）
+  if(t==='milestone')return 'evt';
+  return 'mem';} // observation / share(summary/decision/bugfix/feature/discovery/gotcha)
+function drawVis(){const all=visible();return NMTAB==='all'?all:all.filter(v=>tabOf(v)===NMTAB||v.key===TREE.root.key&&false);}
+function setTab(t){NMTAB=t;
+  document.querySelectorAll('.nm-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  layoutAll();fit();}
+function edge(a,b){const mx=(a.x+b.x)/2;return 'M '+a.x+' '+a.y+' C '+mx+' '+a.y+', '+mx+' '+b.y+', '+b.x+' '+b.y;}
+// ===== 绘制（父子边 + 任务依赖箭头 + 上下文注入影响虚线 + 节点）=====
+function nodeSvg(v){const n=v.node,c=TCN[n.type]||'#38bdf8',e=EMO[n.type]||'💡';
+  const tg=v.children.length?'<circle data-act="toggle" cx="22" cy="-22" r="9" fill="'+(EXP.has(v.key)?'#f43f5e':'#34d399')+'" style="cursor:pointer"><title>'+(EXP.has(v.key)?'收起子级':'展开子级')+'</title></circle>':'';
+  return '<g class="nm-pop" data-key="'+v.key+'" style="cursor:grab'+(v.node.abandoned?';opacity:.55':'')+'" transform="translate('+v.x+','+v.y+')">'
+  +'<circle r="26" fill="rgba(255,255,255,.05)" stroke="'+c+'" stroke-width="2"/>'
+  +(SEL_NODE===v.key?'<circle r="31" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-dasharray="4 3"><title>当前选中</title></circle>':'')
+  +'<text text-anchor="middle" y="8" font-size="19">'+e+'</text>'
+  +(v.node.abandoned?'<line x1="-19" y1="19" x2="19" y2="-19" stroke="#f43f5e" stroke-width="2.5"/>':'')+tg
+  +'<text text-anchor="middle" y="44" class="nm-who">'+esc(String(n.who||'').slice(0,22))+'</text>'
+  +'<text text-anchor="middle" y="56" class="nm-lab">'+esc(String(n.title||'').slice(0,20))+'</text>'
+  +'<title>'+esc((n.when?fmtT(n.when)+' · ':'')+(n.who||'')+' · '+(n.title||''))+'</title></g>';}
+function draw(anim){const svg=$('svg');svg.classList.toggle('nm-quiet',anim===false); /* ★ v4.6.6 draw(false)=纯视图变换重绘，抑制 nm-pop 入场动画防闪烁 */
+  const wr=svg.parentElement.getBoundingClientRect();
+  svg.setAttribute('width',svg.clientWidth||wr.width);svg.setAttribute('height',svg.clientHeight||wr.height); // flex 布局：svg 自身自适应高度（tabs/tools 行在 flow 中不重叠）
+  const vis=drawVis(),vs=new Set(vis);let h='<g transform="translate('+VIEW.x+','+VIEW.y+') scale('+VIEW.k+')">';
+  for(const v of vis){if(v.parent&&vs.has(v.parent))h+='<path class="eg" fill="none" d="'+edge(v.parent,v)+'"/>';}
+  // ★ 真实注入边（RNN 确定性边）：injectedFrom → 目标节点，青色实线箭头（区别推断虚线）
+  for(const v of vis){const ins=v.node.injectedFrom||[];
+    for(const rid of ins){const t2=TREE.byId['n:'+rid];
+      if(t2&&vs.has(t2)&&t2!==v.parent)h+='<path fill="none" stroke="#22d3ee" stroke-width="2.2" marker-end="url(#arw2)" d="'+edge(t2,v)+'"><title>真实注入：'+rid+' → '+esc(String(v.node.title).slice(0,24))+'</title></path>';}}
+  for(const st of Object.values(TREE.stMap)){for(const dep of (st.node.st.dependsOn||[])){const a=TREE.stMap[dep];
+    if(a&&vs.has(a)&&vs.has(st))h+='<path stroke="rgba(148,163,184,.45)" stroke-dasharray="6 5" fill="none" marker-end="url(#arw)" d="'+edge(a,st)+'"/>';}}
+  for(const v of vis){const cs=v.node.concepts||[];if(!cs.length||v.key.startsWith('s:'))continue;
+    for(const c of cs)for(const st of Object.values(TREE.stMap)){
+      if(st!==v&&vs.has(st)&&String(st.node.title).toLowerCase().includes(String(c).toLowerCase()))
+      h+='<path stroke="rgba(167,139,250,.4)" stroke-dasharray="2 7" fill="none" d="'+edge(v,st)+'"><title>上下文注入影响: '+esc(c)+'</title></path>';}}
+  for(const v of vis)h+=nodeSvg(v);
+  h+='</g>';
+  svg.innerHTML='<defs><linearGradient id="eg" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#22d3ee"/></linearGradient><marker id="arw" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="rgba(148,163,184,.6)"/></marker><marker id="arw2" markerWidth="9" markerHeight="9" refX="8" refY="3.5" orient="auto"><path d="M0,0 L8,3.5 L0,7 Z" fill="#22d3ee"/></marker></defs>'+h;
+  $('f-n').textContent=vis.length;}
+// ===== 视图：适配 / 缩放 / 展开 / 聚焦 =====
+function fit(){const vis=drawVis();if(!vis.length)return;const svg=$('svg');const W=svg.clientWidth||900,H=(svg.clientHeight||560)-70;  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const v of vis){x0=Math.min(x0,v.x-80);x1=Math.max(x1,v.x+80);y0=Math.min(y0,v.y-50);y1=Math.max(y1,v.y+70);}
+  const k=Math.max(0.15,Math.min(W/Math.max(50,x1-x0),H/Math.max(50,y1-y0),1.5));
+  VIEW={k:k,x:W/2-(x0+x1)/2*k,y:H/2-(y0+y1)/2*k};draw(false);}
+function zoomBy(f){const svg=$('svg');const W=svg.clientWidth/2,H=svg.clientHeight/2;
+  const k2=Math.min(3,Math.max(0.15,VIEW.k*f));VIEW={k:k2,x:W-(W-VIEW.x)*(k2/VIEW.k),y:H-(H-VIEW.y)*(k2/VIEW.k)};draw(false);}
+function resetLayout(){PINS={};savePins();layoutAll();fit();uiToast('🧹 已清除手动位置，恢复自动布局');} // ★ v4.6.6
+function toggle(key){if(EXP.has(key))EXP.delete(key);else EXP.add(key);layoutAll();draw();}
+function expandAll(){const walk=v=>{if(v.children.length)EXP.add(v.key);v.children.forEach(walk);};walk(TREE.root);layoutAll();draw();}
+function collapseAll(){EXP=new Set([TREE.root.key]);layoutAll();draw();}
+function toggleAbandoned(){SHOW_ABANDONED=!SHOW_ABANDONED;draw();}
+function focusNode(key){closeDetail();const v=TREE.byId[key];if(!v)return;
+  let p=v.parent;while(p){EXP.add(p.key);p=p.parent;}layoutAll();draw();
+  const svg=$('svg');VIEW.x=(svg.clientWidth/2)-v.x*VIEW.k;VIEW.y=(svg.clientHeight/2)-v.y*VIEW.k;draw(false);}
+// ===== 节点报告弹窗（When / Who / What + 叙事 / facts / concepts / 同步状态）=====
+function openDetail(key){const v=TREE.byId[key];if(!v)return;SEL=key;const n=v.node;
+  $('nd-title').textContent=(EMO[n.type]||'💡')+' '+n.title;
+  $('nd-sub').textContent=fmtT(n.when)+' · '+n.who+' · '+(TYPEN[n.type]||n.type)
+    +(n.role?' · 身份 '+n.role:'')+(n.source?' · 来源 '+n.source:'')+(n.taskId?' · 任务 '+n.taskId:'');
+  // ★ 四维元信息徽标（ShareMemory v4.3）——拓扑徽标可点击导航（批次四）
+  let meta='<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem">';
+  if(n.topoPath)meta+='<span class="ws-badge" style="cursor:pointer" onclick="navTopo(\''+esc(n.topoPath)+'\')">📍 '+esc(n.topoPath)+' →</span>';
+  if(n.consensusVer!=null)meta+='<span class="ws-badge">共识 v'+n.consensusVer+'</span>';
+  if(n.abandoned)meta+='<span class="ws-badge" style="background:rgba(244,63,94,.15);color:#f43f5e">已回退（软删）</span>';
+  if((n.files||[]).length)meta+='<span class="ws-badge" title="'+esc(n.files.join(', '))+'">📄 '+esc(n.files.slice(0,3).join(', ').slice(0,44))+(n.files.length>3?' +'+(n.files.length-3):'')+'</span>'; // claude-mem 观察分层文件锚点
+  meta+='</div>';
+  let b=meta+'<div style="font-size:var(--fsS);line-height:1.75;color:var(--mut)">'+esc(n.narrative||'（无叙事）')+'</div>';
+  // ★ 注入边（RNN 确定性前序，可点击定位）
+  if((n.injectedFrom||[]).length)b+='<div style="margin-top:.6rem;font-size:var(--fsX);color:#22d3ee">⇠ 注入边（前序来源）</div>'
+    +n.injectedFrom.map(id=>{const t=TREE.byId['n:'+id];
+      return '<div style="font-size:var(--fsX);color:var(--mut);cursor:pointer;padding:.15rem 0" onclick="focusNode(\'n:'+id+'\')">'+(t?(EMO[t.node.type]||'💡')+' '+esc(String(t.node.title).slice(0,34))+' <span style="color:var(--dim)">— '+esc(String(t.node.who||''))+'</span>':esc(id)+'（已回退）')+'</div>';}).join('');
+  if((n.userMarkedRelated||[]).length)b+='<div style="margin-top:.4rem;font-size:var(--fsX);color:var(--dim)">用户标注关联: '+n.userMarkedRelated.map(id=>{const t=TREE.byId['n:'+id];
+    return '<span style="cursor:pointer;color:var(--mut)" onclick="focusNode(\'n:'+id+'\')">'+esc(id)+(t?'('+esc(String(t.node.title).slice(0,14))+')':'')+'</span>';}).join(' · ')+'</div>';
+  if((n.facts||[]).length)b+='<div style="margin-top:.6rem;font-size:var(--fsX);color:var(--dim)">facts</div>'+n.facts.map(f=>'<div style="font-size:var(--fsX);color:var(--mut)">• '+esc(f)+'</div>').join('');
+  if((n.concepts||[]).length)b+='<div style="margin-top:.6rem">'+n.concepts.map(c=>'<span class="ws-badge">'+esc(c)+'</span>').join(' ')+'</div>';
+  b+='<div style="margin-top:.8rem;font-size:var(--fsX);color:var(--dim)">同步: '+(key.indexOf('n:')===0?(n.sync==='synced'?'<span style="color:#34d399">● 已上传飞书</span>':'<span style="color:#fbbf24">● 待同步（自动重试）</span>'):'<span style="color:#94a3b8">结构节点（任务/子任务拓扑占位，非记忆节点，不参与同步）</span>')+'</div>';
+  if(v.children.length)b+='<div style="margin-top:.6rem;font-size:var(--fsX);color:var(--dim)">子节点 ('+v.children.length+')</div>'+v.children.map(c=>'<div style="font-size:var(--fsX);color:var(--mut);cursor:pointer;padding:.15rem 0" onclick="focusNode(\''+c.key+'\')">'+(EMO[c.node.type]||'💡')+' '+esc(String(c.node.title).slice(0,34))+' <span style="color:var(--dim)">— '+esc(String(c.node.who||''))+'</span></div>').join('');
+  // ★ 自己的链路：回退按钮（R16 归属 + R17 reason 提示）
+  if(v.key.indexOf('s:')===0&&n.st&&n.st.assignee===_myName&&n.st.status!=='done')
+    b+='<button class="btn btn-s" style="margin-top:.8rem;width:100%;color:#f43f5e" onclick="doRevert(\''+n.taskId+'\')">↩ 回退我的开发链到继承点（软删 + 失败记忆沉淀）</button>';
+  $('nd-body').innerHTML=b;
+  const tb=$('nd-toggle');if(v.children.length){tb.style.display='block';tb.textContent=EXP.has(key)?'收起子节点':'展开子节点 ('+v.children.length+')';}else tb.style.display='none';
+  $('nm-detail').style.display='block';}
+function toggleFromDetail(){if(!SEL)return;toggle(SEL);const v=TREE.byId[SEL],tb=$('nd-toggle');
+  if(v&&v.children.length)tb.textContent=EXP.has(SEL)?'收起子节点':'展开子节点 ('+v.children.length+')';}
+function closeDetail(){$('nm-detail').style.display='none';SEL=null;}
+// ===== 缩放 / 平移 / 点击交互 =====
+let _panned=false;
+// ★ v4.6.6 rAF 合帧：拖动中每帧最多一次全量重绘（大图也顺滑）
+let _rafPend=false;
+function drawSoft(){if(_rafPend)return;_rafPend=true;requestAnimationFrame(()=>{_rafPend=false;draw(false);});}
+function bindEvents(){const svg=$('svg');
+  svg.addEventListener('wheel',e=>{e.preventDefault();const r=svg.getBoundingClientRect();
+    const mx=e.clientX-r.left,my=e.clientY-r.top,f=e.deltaY<0?1.12:1/1.12;
+    const k2=Math.min(3,Math.max(0.15,VIEW.k*f));
+    VIEW={k:k2,x:mx-(mx-VIEW.x)*(k2/VIEW.k),y:my-(my-VIEW.y)*(k2/VIEW.k)};draw(false);},{passive:false});
+  // ★ v4.6.7 浏览器默认行为阻断：dragstart 兜底——SVG text 划选/原生拖拽会劫持 mousemove，导致左键拖动失效
+  svg.addEventListener('dragstart',e=>e.preventDefault());
+  svg.addEventListener('mousedown',e=>{if(e.button===0)e.preventDefault();}); // ★ v4.6.7 三轮保险：Chromium 怪癖——pointerdown 的 preventDefault 不能可靠阻止文本选择/原生拖拽，mousedown 才是标准阻止点（本 handler 仅禁默认行为，drag 初始化仍由 pointerdown 负责，鼠标/触摸统一不受影响）
+  // ★ v4.6.6 左键按下分流：命中节点本体 → 拖动该节点（微调显示位置，本机持久化）；展开钮/空白 → 拖画布平移
+  svg.addEventListener('pointerdown',e=>{if(e.button!==0)return; // ★ v4.6.7 二轮：Pointer 事件统一（鼠标/触摸/笔）——触摸长按拖动不再被浏览器手势劫持
+    e.preventDefault(); // ★ 阻止文本选择起点/原生拖拽（click/dblclick/右键菜单不受影响）
+    _panned=false;svg.classList.add('nm-dragging');
+    const g=e.target.closest('[data-key]');
+    if(g&&!e.target.dataset.act&&TREE){const v=TREE.byId[g.dataset.key];
+      if(v){drag={node:g.dataset.key,sx:e.clientX,sy:e.clientY,ox:v.x,oy:v.y};return;}}
+    drag={sx:e.clientX,sy:e.clientY,vx:VIEW.x,vy:VIEW.y};});
+  window.addEventListener('pointermove',e=>{if(!drag)return;
+    const dx=e.clientX-drag.sx,dy=e.clientY-drag.sy;
+    if(Math.abs(dx)+Math.abs(dy)>3)_panned=true;
+    if(drag.node){const v=TREE.byId[drag.node];if(!v)return;
+      v.x=drag.ox+dx/VIEW.k;v.y=drag.oy+dy/VIEW.k;drawSoft();} // 世界坐标位移 = 屏幕位移 / 缩放比（缩放状态下拖动方向/距离正确）
+    else{VIEW.x=drag.vx+dx;VIEW.y=drag.vy+dy;drawSoft();}}); // ★ 修复：旧实现平移漏调 draw()——拖画布画面不刷新
+  window.addEventListener('pointerup',()=>{if(!drag)return;
+    if(drag.node&&_panned){const v=TREE.byId[drag.node];
+      if(v){PINS[drag.node]={x:v.x,y:v.y};savePins();uiToast('📍 已记住节点位置（本机浏览器）· 🧹 重置布局可恢复');}}
+    drag=null;$('svg').classList.remove('nm-dragging');});
+  window.addEventListener('pointercancel',()=>{drag=null;$('svg').classList.remove('nm-dragging');}); // ★ 触摸被系统手势打断时清理拖动状态
+  svg.addEventListener('click',e=>{if(_panned){_panned=false;return;}
+    const g=e.target.closest('[data-key]');if(!g)return;const key=g.dataset.key;
+    if(e.target.dataset.act==='toggle'){toggle(key);return;}
+    // ★ v4.3.2 单击：底部信息栏显示当前节点 WWW（双击打开完整报告）
+    SEL_NODE=key;renderInfoBar(key);draw();});
+  svg.addEventListener('dblclick',e=>{if(_panned)return;
+    const g=e.target.closest('[data-key]');if(!g)return;
+    if(e.target.dataset.act==='toggle')return;
+    openDetail(g.dataset.key);});}
+// ===== 侧栏渲染 + 数据加载（SSE 节点增量感知 + 轮询降级）=====
+function renderSide(d){
+  _myName=d.name; // 自主继承 UI 依赖（回退按钮归属判断）
+  // 发布任务为 Leader 的 AI 静默路径（MCP teamwork_publish_task，画像感知拆解 + 默式注入收件箱）——Web 不设人工入口
+  $('h-user').textContent=d.name+' · '+d.role;$('h-phase-text').textContent=d.phase;
+  // ★ v4.6.12 成员栏全量渲染：display=临时名(身份码)（名字可撞可改，身份码唯一可溯源）；👑 按 leaderId 判断（非名字比对）；
+  // 三态：busy（本机持锁干活）/ idle（本机在线）/ away（云端参与者——经 shareMemory 同步的跨机成员，无本机心跳，灰显 + 最近活跃时间）
+  $('w-members').innerHTML=d.members.map(u=>{const st=u.status==='collab-busy'?'busy':(u.status==='away'?'away':'idle');
+  const lastTxt=u.lastActive?new Date(u.lastActive).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+  return '<div class="mb"><div class="av '+st+'" style="background:'+avC(u.name)+'">'+u.name[0].toUpperCase()+'</div><div class="mi"><div class="mn">'+esc(u.display)+(u.id===d.leaderId?' 👑':'')+'</div><div class="mt">'+(u.currentTask?'⚙️ '+u.currentTask:(u.status==='away'?'☁ '+lastTxt:'—'))+'</div></div><span class="stg st-'+st+'">'+(st==='away'?'CLOUD':st.toUpperCase())+'</span></div>';}).join('');
+  $('w-mem-count').textContent=d.memory.total+' 条';
+  $('w-mem-list').innerHTML=(d.memory.latest||[]).slice(0,10).map(n=>
+    '<div class="nm-mem-it" onclick="focusNode(\'n:'+n.id+'\')">'
+    +'<span class="nm-mem-dot" style="background:'+(TC[n.type]||'#a78bfa')+'"></span>'
+    +'<div style="flex:1;min-width:0"><div class="nm-mem-tt">'+esc(String(n.title).slice(0,52))+'</div>'
+    +'<div class="nm-mem-mt">'+esc(n.who)+' · '+fmtT(n.when)+'</div></div></div>').join('')
+    ||'<div style="font-size:var(--fsX);color:var(--dim)">暂无记忆</div>';
+  $('w-stream').innerHTML=d.memory.latest.map(n=>
+  '<div class="mem-it" style="--mc:'+(TC[n.type]||'#a78bfa')+';cursor:pointer" onclick="focusNode(\'n:'+n.id+'\')"><div class="mh"><span class="mw">'+n.who+'</span><span class="mty">'+n.type+'</span><span style="margin-left:auto;font-size:11px">'+fmtT(n.when)+'</span></div><div class="mt">'+esc(n.title)+'</div></div>').join('');
+  $('f-o').textContent=d.members.filter(u=>u.status!=='away').length;
+  renderConsensus();
+  api('GET','/api/ws/'+wsId+'/skills').then(r=>{
+    const list=r.skills||[];
+    window._skills=list;
+    $('w-skills').innerHTML=list.length?list.map((s,i)=>'<div class="nm-skill-it" onclick="showSkill('+i+')">🧩 '+esc(s.name)+' <span style="color:var(--dim)">('+esc(s.provider)+')</span></div>').join(''):'<span style="color:var(--dim)">暂无</span>';}).catch(()=>{});}
+function showSkill(i){const s=(window._skills||[])[i];if(!s)return;
+  uiShow('🧩 '+s.name,'提供者: '+s.provider+(s.description?'\n\n'+s.description:'')+'\n\n'+(s.content||'（无内容）'));}
+function renderConsensus(){api('GET','/api/ws/'+wsId+'/consensus').then(r=>{
+  if(r.error){$('w-consensus').innerHTML='<span style="color:var(--dim)">不可用</span>';return;}
+  const cs=(r.items||[]).filter(i=>i.status==='confirmed').slice(0,3);
+  $('w-consensus').innerHTML='<div onclick="showConsensus()" style="cursor:pointer">'+(cs.length?cs.map(i=>'<div style="color:var(--mut);padding:.15rem 0">⚖️ '+esc(String(i.text).slice(0,26))+'</div>').join(''):'<span style="color:var(--dim)">尚无共识（点击提议）</span>')+'</div>'
+  +(r.counts&&(r.counts.proposed||r.counts.arbitration)?'<div style="color:#fbbf24;font-size:var(--fsX)">待确认 '+r.counts.proposed+' · 待裁决 '+r.counts.arbitration+'</div>':'');
+  window._consData=r;}).catch(()=>{});}
+function showConsensus(){const r=window._consData||{items:[],keys:['other']};
+  $('nd-title').textContent='⚖️ 工作组共识（v'+(r.ver||0)+'）';
+  $('nd-sub').textContent='全员确认或 Leader 一票 → confirmed（注入上下文）· 同 key 冲突与超时 → Leader 裁决';
+  const grp=(st,tt,cl)=>{const g=(r.items||[]).filter(i=>i.status===st);
+    return g.length?'<div style="margin-top:.7rem;font-size:var(--fsS);color:'+cl+'">'+tt+'</div>'+g.map(i=>'<div style="border:1px solid rgba(255,255,255,.08);border-radius:.5rem;padding:.6rem;margin-top:.4rem"><span class="ws-badge">'+esc(i.key)+'</span> <span style="font-size:var(--fsS)">'+esc(i.text)+'</span><div style="font-size:var(--fsX);color:var(--dim);margin-top:.25rem">by '+esc(i.provider)+(i.sinceVer?' · since v'+i.sinceVer:'')+' · 已确认 '+i.confirmations.length+' 人</div>'
+    +(st==='proposed'?'<button class="btn btn-s" style="margin-top:.4rem;padding:.3rem .7rem;font-size:var(--fsX)" onclick="doConsAct({confirmId:\''+i.id+'\'})">✓ 我确认</button>':'')
+    +(st==='arbitration'?'<button class="btn btn-p" style="margin-top:.4rem;padding:.3rem .7rem;font-size:var(--fsX)" onclick="doConsAct({arbitrateId:\''+i.id+'\',accept:true})">裁决通过</button> <button class="btn btn-s" style="margin-top:.4rem;padding:.3rem .7rem;font-size:var(--fsX);color:#f43f5e" onclick="doConsAct({arbitrateId:\''+i.id+'\',accept:false})">驳回</button>':'')
+    +(st==='confirmed'?'<button class="btn btn-s" style="margin-top:.4rem;padding:.3rem .7rem;font-size:var(--fsX);color:#f43f5e" onclick="doConsAct({archiveId:\''+i.id+'\'})">归档</button>':'')
+    +'</div>').join(''):'';};
+  let b=grp('confirmed','#34d399','confirmed（生效中·注入上下文）')+grp('proposed','#fbbf24','proposed（待全员确认）')+grp('arbitration','#f43f5e','arbitration（待 Leader 裁决）');
+  b+='<div style="margin-top:1rem;font-size:var(--fsS);color:var(--dim)">提议新共识</div>'
+  +'<div class="fg" style="margin-top:.4rem"><label>类别 Key</label><select id="cs-key">'+(r.keys||['other']).map(k=>'<option value="'+k+'">'+k+'</option>').join('')+'</select></div>'
+  +'<div class="fg"><label>内容（≤60 字）</label><input id="cs-text" maxlength="60" placeholder="如：命名统一小驼峰"></div>'
+  +'<button class="btn btn-p" style="width:100%" onclick="doConsPropose()">⚖️ 提议</button>';
+  $('nd-body').innerHTML=b;$('nd-toggle').style.display='none';
+  $('nm-detail').style.display='block';}
+function doConsPropose(){const t=$('cs-text').value.trim();if(!t){uiToast('请输入共识内容',true);return;}
+  api('POST','/api/ws/'+wsId+'/consensus',{text:t,key:$('cs-key').value}).then(r=>{
+    if(r.error){uiToast(r.error,true);return;}
+    uiToast(r.conflict?'⚠ 该 key 已有生效共识——结构冲突，已转 Leader 裁决':'✅ 已提议，等待全员确认');
+    renderConsensus();window._consData=null;closeDetail();setTimeout(refresh,200);}).catch(e=>uiToast(e.message,true));} // ★ v4.3.4：提议完成自动关闭弹窗
+function doConsAct(p){api('POST','/api/ws/'+wsId+'/consensus',p).then(r=>{
+  if(r.error){uiToast(r.error,true);return;}
+  uiToast(p.archiveId?('✅ 已归档'+(r.archived?('（'+r.archived+' 个共识节点已从主流程移除并同步云端）'):'')):(p.accept===false?'已驳回':'✅ 已确认'));
+  renderConsensus();window._consData=null;closeDetail();setTimeout(refresh,200);}).catch(e=>uiToast(e.message,true));} // ★ v4.3.4：确认/归档后关闭弹窗并刷新地图
+function refresh(){api('GET','/api/ws/'+wsId+'/status').then(d=>{if(d.error){uiToast(d.error,true);setTimeout(()=>location.href='/lobby',1400);return;}
+  renderSide(d);
+  const sig=(d.nodes||[]).length+'|'+(d.tasks||[]).length;
+  if(RAW&&RAW.sig===sig){RAW=Object.assign({},RAW,{nodes:d.nodes});return;}
+  RAW=Object.assign({},d,{sig});TREE=buildTree(d);
+  for(const k of Array.from(EXP))if(!TREE.byId[k])EXP.delete(k);
+  if(!EXP.size)EXP.add(TREE.root.key);
+  layoutAll();if(!didFit){fit();didFit=true;}else draw();
+  if(!_oeChecked){_oeChecked=true; // 首次进入：无身份且有可继承末端 → 自动弹出选择界面
+    api('GET','/api/ws/'+wsId+'/open-ends').then(r=>{if(r&&!r.error&&!r.identity&&(r.ends||[]).length)showOpenEnds();}).catch(()=>{});}
+  }).catch(()=>location.href='/');}
+// ===== 自主继承协议 UI（v4.3 批次二）：末端选择 / 继承 / 回退 =====
+let _myName='',_oeChecked=false,_restored=false;
+// ★ v4.3.5 shareMemory 真源恢复：每次进入工作组页先从飞书对齐拓扑节点（Cloud Sync 读路径；fail-open）
+function restoreFromCloud(force){if(BUSY)return;
+  api('GET','/api/ws/'+wsId+'/restore'+(force?'?full=1':'')).then(r=>{ // v4.3.8：进入=map.md 骨架（快）；按钮=full 补全内容
+    if(r&&r.ok){uiToast('☁ shareMemory 已对齐（'+(r.full?'全量内容':'骨架')+'）：远端 '+r.remote+' 节点'+(r.restored?('，恢复 '+r.restored+' 个'):'（本地为最新）')+(r.tasks>0?(' + 任务 '+r.tasks+' 条'):'')+(r.ops&&r.ops.length?'，最近操作 '+r.ops[r.ops.length-1].action+' by '+r.ops[r.ops.length-1].who:''));
+      if(force||r.restored||r.tasks>0)refresh();}
+    else if(r&&r.error){uiToast(r.error,true);}
+  }).catch(e=>uiToast(e.message,true));}
+// ★ v4.3.8 跟随云文档变更：每 20s 骨架增量对齐（他人经飞书协作修改 map.md / 新增节点 → 自动同步到本地拓扑地图）
+let _cloudTimer=null;
+function startCloudWatch(){if(_cloudTimer)return;_cloudTimer=setInterval(()=>{
+  api('GET','/api/ws/'+wsId+'/restore').then(r=>{
+    if(r&&r.ok&&(r.restored>0||r.tasks>0)){uiToast('☁ 云端变更：恢复 '+r.restored+' 个节点'+(r.tasks>0?(' + 任务 '+r.tasks+' 条'):'')+'（来自 NodeMap.md 协作——任务分发/继承/完成跨机可见）');refresh();}
+  }).catch(()=>{});},20000);}
+function showOpenEnds(){api('GET','/api/ws/'+wsId+'/open-ends').then(r=>{
+  if(r.error){uiToast(r.error,true);return;}
+  const ends=r.ends||[];
+  $('nd-title').textContent='🔗 可继承的末端链路';
+  $('nd-sub').textContent=r.identity?('你的身份: '+r.identity+'（同域优先排序）——身份由继承赋予，可选择跨域链路'):'你还没有身份——选择一条链路继承，身份由此赋予（区块链：选链路即得身份）';
+  let b=ends.length?ends.map(e=>'<div style="border:1px solid rgba(255,255,255,.08);border-radius:.5rem;padding:.7rem;margin-bottom:.6rem">'
+   +'<div style="display:flex;gap:.4rem;flex-wrap:wrap"><span class="ws-badge">'+esc(e.domain)+'</span><span class="ws-badge">📍'+esc(e.topoPath)+'</span>'
+   +(e.prevAssignee?'<span class="ws-badge" style="background:rgba(251,191,36,.12);color:#fbbf24">前任: '+esc(e.prevAssignee)+'</span>':'')
+   +'<span class="ws-badge">域内记忆 '+e.domainMemCount+'</span></div>'
+   +'<div style="margin-top:.4rem;font-size:var(--fsS);color:var(--fg)">'+esc(e.what)+'</div>'
+   +(e.lastNode?'<div style="font-size:var(--fsX);color:var(--dim);margin-top:.2rem">末端: '+esc(String(e.lastNode.title).slice(0,40))+' — '+esc(e.lastNode.who+(e.lastNode.whoId?'('+e.lastNode.whoId+')':''))+'</div>':'<div style="font-size:var(--fsX);color:var(--dim);margin-top:.2rem">（全新链路，无前序产出）</div>')
+   +'<button class="btn btn-p" style="margin-top:.5rem;padding:.25rem .8rem;font-size:var(--fsX)" onclick="doInherit(\''+e.taskId+'\')">🔗 继承此链路</button></div>').join('')
+   :'<div class="emp"><span class="ee">🚀</span><div class="eh">当前没有可继承的末端链路</div><div class="eh">等待 Leader 发布任务或前置依赖解锁</div></div>';
+  $('nd-body').innerHTML=b;$('nd-toggle').style.display='none';
+  $('nm-detail').style.display='block';}).catch(e=>uiToast(e.message,true));}
+function doInherit(taskId){uiConfirm('🔗 继承链路','确认继承 '+taskId+' ？身份将由本次继承赋予，租约开始计时（产出保活）。',()=>{
+  api('POST','/api/ws/'+wsId+'/inherit',{taskId:taskId}).then(r=>{
+    if(r.error){uiToast(r.error,true);if(r.error.indexOf('占用')>=0)showOpenEnds();return;}
+    closeDetail();
+    uiShow('✅ 继承成功','身份: '+r.identity+'\n\nInheritBundle（链上信息 + 域内 Memory + 共识，注入参考）:\n'+String(r.bundle||'').replace(/<[^>]+>/g,'').slice(0,800));
+    refresh();}).catch(e=>uiToast(e.message,true));});}
+function doRevert(taskId){uiPrompt('↩ 回退我的开发链','崩溃原因（强烈建议填写——将沉淀为失败记忆，重新开发时自动注入避免重蹈覆辙）\n区块链语义：只软删你继承点之后的开发链，继承前的祖先拓扑节点不受任何影响','例如：哪个方向走不通 / 卡在哪 / 为什么',
+    (reason)=>{api('POST','/api/ws/'+wsId+'/revert',{taskId:taskId,reason:reason}).then(r=>{
+    if(r.error){uiShow('⚠ 回退被拒',r.error+(r.impact?'\n\n下游影响清单:\n'+r.impact.map(x=>x.nodeId+' '+x.who+'《'+String(x.title).slice(0,30)+'》').join('\n'):''));return;}
+    closeDetail();uiToast('✅ 已回退 '+r.reverted+' 个节点（祖先链 '+r.protected+' 节点受保护），任务回到 ready——从初始继承节点重新开发');refresh();}).catch(e=>uiToast(e.message,true));},'');}
+// ===== 批次四：拓扑导航 + 检索面板（三层检索：topo / domain / kw 同域优先）=====
+// ★ v4.3.2 底部信息栏：单击节点显示 When·Who·What（双击开完整报告）
+function renderInfoBar(key){const v=TREE.byId[key];if(!v)return;const n=v.node;
+  const tabs={all:'全部',task:'任务流',chain:'继承链',mem:'记忆',evt:'事件'};
+  const bar=$('nm-info-bar');
+  bar.innerHTML='<span class="ib-emoji">'+(EMO[n.type]||'💡')+'</span>'
+   +'<span class="ib-title" title="'+esc(n.title)+'">'+esc(String(n.title).slice(0,44))+'</span>'
+   +'<span class="ib-meta">'+esc(n.who)+' · '+fmtT(n.when)+' · '+(TYPEN[n.type]||n.type)+' · '+tabs[tabOf(v)]+'</span>'
+   +(n.topoPath?'<span class="ws-badge">📍'+esc(n.topoPath)+'</span>':'')
+   +(n.role?'<span class="ws-badge">'+esc(n.role)+'</span>':'')
+   +(n.abandoned?'<span class="ws-badge" style="background:rgba(244,63,94,.15);color:#f43f5e">已回退</span>':'')
+   +(key.indexOf('n:')===0?(n.sync==='synced'?'<span class="ws-badge" style="background:rgba(52,211,153,.12);color:#34d399">☁ 已上传</span>':'<span class="ws-badge" style="background:rgba(251,191,36,.12);color:#fbbf24">待同步</span>'):'<span class="ws-badge" style="background:rgba(148,163,184,.12);color:#94a3b8">🧩 结构节点</span>')
+   +'<span style="flex:1"></span>'
+   +'<button class="btn btn-s" onclick="openDetail(\''+key+'\')">📄 详情报告</button>'
+   +(v.children.length?'<button class="btn btn-s" onclick="toggle(\''+key+'\');renderInfoBar(\''+key+'\')">'+(EXP.has(key)?'⊖ 收起('+v.children.length+')':'⊕ 展开('+v.children.length+')')+'</button>':'')
+   +'<button class="btn btn-s" onclick="SEL_NODE=null;$(\'nm-info-bar\').innerHTML=\'<span class=\\\'ib-meta\\\'>已取消选中</span>\';draw()">✕ 取消</button>';}
+function navTopo(path){closeDetail();
+  const seg=String(path).split('/').filter(Boolean);const last=seg[seg.length-1];
+  const key=TREE.byId['s:'+last]?'s:'+last:(TREE.byId['t:'+last]?'t:'+last:null);
+  if(!key){uiToast('拓扑 '+path+' 无对应节点（路径可能已重组）',true);return;}
+  focusNode(key);}
+function doSearch(){uiPrompt('🔍 检索工作组记忆','留空 = 最近节点；输入关键词 = 语义检索（你的身份域优先排序）；拓扑检索请点击节点报告中的 📍 徽标','关键词（可留空）',
+  (q)=>{api('POST','/api/ws/'+wsId+'/search',{query:q,limit:12}).then(r=>{
+    if(r.error){uiToast(r.error,true);return;}
+    const rs=r.results||[];
+    $('nd-title').textContent='🔍 检索结果'+(q?('「'+q+'」'):'（最近）')+(window._consData?'':'');
+    $('nd-sub').textContent=rs.length?rs.length+' 条 · 点击定位节点图位置（身份域优先排序）':'无结果';
+    let b=rs.length?rs.map(x=>'<div style="border:1px solid rgba(255,255,255,.08);border-radius:.4rem;padding:.5rem;margin-bottom:.4rem;cursor:pointer" onclick="focusNode(\'n:'+x.id+'\')">'
+      +'<div style="display:flex;gap:.4rem;flex-wrap:wrap">'+(EMO[x.type]||'💡')+' <span style="font-size:var(--fsS)">'+esc(String(x.title).slice(0,40))+'</span>'
+      +(x.role?'<span class="ws-badge">'+esc(x.role)+'</span>':'')+(x.topoPath?'<span class="ws-badge">📍'+esc(x.topoPath)+'</span>':'')+'</div>'
+      +'<div style="font-size:var(--fsX);color:var(--dim);margin-top:.15rem">'+x.id+' · '+esc(x.who)+' · '+fmtT(x.when)+'</div></div>').join('')
+      :'<div class="emp"><span class="ee">🕳</span><div class="eh">没有匹配的记忆</div></div>';
+    $('nd-body').innerHTML=b;$('nd-toggle').style.display='none';
+    $('nm-detail').style.display='block';});}).catch(e=>uiToast(e.message,true));}
+function connectSSE(){try{const es=new EventSource('/api/ws/'+wsId+'/events');
+  es.addEventListener('status',e=>{try{const s=JSON.parse(e.data);
+    if(s.nodeCount!==undefined&&(!RAW||s.nodeCount!==(RAW.nodes||[]).length))refresh();
+  }catch(err){}});
+  es.onerror=()=>{es.close();console.warn('SSE 断开，降级轮询');startPoll();};}catch(err){startPoll();}}
+function startPoll(){setInterval(()=>{api('GET','/api/ws/'+wsId+'/status').then(d=>{if(!d.error)refresh();}).catch(()=>{});},3000);}
+// ===== 统一 UI 组件（页面内弹框/Toast，替代浏览器原生 alert/confirm/prompt；风格对齐 form-card/.fg）=====
+let _mOk=null;
+function uiModal(title,sub,bodyHtml,okText,onOk,hideCancel){
+  $('nm-m-title').textContent=title;
+  $('nm-m-sub').style.display=sub?'block':'none';$('nm-m-sub').textContent=sub||'';
+  $('nm-m-body').innerHTML=bodyHtml||'';$('nm-m-body').style.display=bodyHtml?'block':'none';
+  $('nm-m-txt').style.display='none';
+  $('nm-m-ok').textContent=okText||'确认';_mOk=onOk;
+  $('nm-m-cancel').style.display=hideCancel?'none':'inline-block';
+  $('nm-modal').style.display='flex';}
+function uiClose(){$('nm-modal').style.display='none';_mOk=null;}
+function uiOk(){const f=_mOk;uiClose();if(f)f();}
+function uiToast(msg,isErr,ms){const d=document.createElement('div');
+  d.className='nm-toast-it'+(isErr?' err':'');d.textContent=msg;
+  $('nm-toast').appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .4s';setTimeout(()=>d.remove(),400);},ms||3200);}
+function uiConfirm(title,text,onOk){uiModal(title,'',null,'确认',onOk);
+  $('nm-m-txt').style.display='block';$('nm-m-txt').textContent=text;}
+function uiShow(title,text,okText){uiModal(title,'',null,okText||'知道了',null,true);
+  $('nm-m-txt').style.display='block';$('nm-m-txt').textContent=text;}
+function uiPrompt(title,sub,placeholder,onOk,def){uiModal(title,sub,
+  '<div class="fg"><input id="nm-m-in" placeholder="'+esc(placeholder||'')+'" value="'+esc(def||'')+'"></div>','确认',()=>onOk($('nm-m-in').value));
+  setTimeout(()=>{const el=$('nm-m-in');if(el){el.focus();el.select();el.onkeydown=e=>{if(e.key==='Enter')uiOk();};}},50);}
+// ===== Leader 发布任务：走 AI 静默链路（MCP teamwork_publish_task → 画像感知拆解 → 默式注入收件箱），Web 无人工表单 =====
+checkAuth(()=>{ // ★ v4.3.8：进入工作组先从 shareMemory（飞书真源）对齐拓扑，再渲染节点地图（fail-open：恢复失败照常显示本地）+ 跟随云文档变更 20s 增量对齐
+  _restored=true;
+  api('GET','/api/ws/'+wsId+'/restore').then(r=>{if(r&&r.ok&&r.restored)uiToast('☁ 已从 shareMemory 恢复 '+r.restored+' 个拓扑节点');})
+    .catch(()=>{}).finally(()=>{refresh();bindEvents();connectSSE();startCloudWatch();});});
+</script>
+<div id="nm-detail" onclick="if(event.target===this)closeDetail()"><div class="form-card">
+<h1 id="nd-title"></h1><div class="sub" id="nd-sub"></div><div id="nd-body"></div>
+<div style="display:flex;gap:.6rem;margin-top:1rem">
+<button class="btn btn-p" style="flex:1;display:none" id="nd-toggle" onclick="toggleFromDetail()"></button>
+<button class="btn btn-s" onclick="closeDetail()">关闭</button>
+</div></div></div>
+<div id="nm-modal" onclick="if(event.target===this)uiClose()"><div class="form-card">
+<h1 id="nm-m-title"></h1><div class="sub" id="nm-m-sub" style="display:none"></div>
+<div id="nm-m-body"></div><div id="nm-m-txt" style="display:none"></div>
+<div style="display:flex;gap:.6rem;margin-top:1.2rem">
+<button class="btn btn-p" style="flex:1" id="nm-m-ok" onclick="uiOk()">确认</button>
+<button class="btn btn-s" id="nm-m-cancel" onclick="uiClose()">取消</button>
+</div></div></div>
+<div id="nm-toast"></div>
+</body>
+</html>

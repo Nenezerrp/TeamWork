@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TeamWork · 大厅</title>
+<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/components.css">
+</head>
+<body>
+<div class="st"></div><div class="b b1"></div><div class="b b2"></div>
+<header>
+<a class="logo" href="/lobby"><span class="s">✦</span> TEAMWORK</a>
+<span class="pill" id="h-user"></span>
+<div class="sp"></div>
+<button class="btn btn-s" onclick="logout()" style="padding:.3rem .8rem;font-size:var(--fsX)">退出</button>
+</header>
+<div class="view" id="app">
+<div style="display:grid;grid-template-columns:260px 1fr;gap:1rem;height:calc(100vh - 70px);overflow:hidden">
+<aside class="pn" style="overflow-y:auto">
+<h2>👤 我的身份</h2>
+<div id="l-profile"></div>
+</aside>
+<div style="overflow-y:auto;padding-right:.5rem">
+<div class="dash-head">
+<h1>🏠 工作组大厅</h1>
+<div class="sp" style="flex:1"></div>
+<button class="btn btn-p" onclick="showCreate()">+ 创建工作组</button>
+<button class="btn btn-s" onclick="showJoin()">加入工作组</button>
+</div>
+<div id="l-list"></div>
+</div></div></div>
+<style>
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;backdrop-filter:blur(6px);align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+.spinner{width:48px;height:48px;border:4px solid rgba(99,102,241,.2);border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--mut);font-size:var(--fsS);letter-spacing:.08em}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn.loading{background:rgba(99,102,241,.3);color:var(--mut);cursor:wait}
+</style>
+<div class="loading-overlay" id="loading" onclick="event.stopPropagation()">
+<div class="spinner"></div>
+<div class="loading-text" id="loading-text">正在创建飞书目录...</div>
+</div>
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;backdrop-filter:blur(4px)" onclick="if(event.target===this)closeModal()">
+<div class="form-card" style="margin:6rem auto;max-width:420px">
+<h1 id="m-title"></h1><div class="sub" id="m-sub"></div><div id="m-body"></div>
+<div class="err-msg" id="m-err"></div>
+<div style="display:flex;gap:.8rem;margin-top:1rem">
+<button class="btn btn-p" style="flex:1" id="m-ok" onclick="doModal()">确认</button>
+<button class="btn btn-s" id="m-cancel" onclick="closeModal()">取消</button>
+</div></div></div>
+<script src="/common.js"></script>
+<script>
+let MODAL='',BUSY=false;
+function showLoading(text){$('loading-text').textContent=text||'处理中...';$('loading').style.display='flex';$('m-ok').disabled=true;$('m-cancel').disabled=true;BUSY=true;}
+function hideLoading(){$('loading').style.display='none';$('m-ok').disabled=false;$('m-cancel').disabled=false;BUSY=false;}
+function showModal(t,s,b){$('m-title').textContent=t;$('m-sub').textContent=s;$('m-body').innerHTML=b;$('m-err').textContent='';$('m-err').classList.remove('show');$('m-ok').textContent='确认';$('m-cancel').style.display='';$('modal').style.display='flex';}
+function showError(msg){const e=$('m-err');e.textContent='⚠ '+msg;e.classList.add('show');$('m-ok').textContent='确认';}
+function closeModal(){if(BUSY)return;$('modal').style.display='none';MODAL='';}
+function showCreate(){if(BUSY)return;MODAL='create';api('GET','/api/workspace-names').then(r=>openCreateForm(r.names||[])).catch(()=>openCreateForm([]));}
+function openCreateForm(names){window._wsNames=names;showModal('🏠 创建工作组','你将成为 Leader',
+'<div class="fg"><label>Workspace Name</label><input id="c-name" placeholder="如 Alpha" autocomplete="off"><div id="c-name-hint" style="display:none;font-size:var(--fsX);color:#f43f5e;margin-top:.25rem">⚠ 该名称已被占用，请换一个名称</div></div><div class="fg"><label>Wpassword</label><input id="c-pass" type="password"></div><div class="fg"><label>MemoryLimit</label><input id="c-mem" type="number" value="1000"></div>');
+const el=$('c-name');el.addEventListener('input',()=>{const v=el.value.trim();const dup=!!v&&names.includes(v);$('c-name-hint').style.display=dup?'block':'none';el.style.borderColor=dup?'#f43f5e':'';});el.focus();}
+function showJoin(){if(BUSY)return;MODAL='join';showModal('🤝 加入工作组','输入工作组名称和密码',
+'<div class="fg"><label>工作组名称</label><input id="j-name" placeholder="如 Alpha Project"></div><div class="fg"><label>Wpassword</label><input id="j-pass" type="password"></div><label class="chk"><input type="checkbox" id="j-push" checked> autoPush</label><label class="chk"><input type="checkbox" id="j-pull" checked> autoPull</label>');}
+function doModal(){if(BUSY)return;$('m-err').classList.remove('show');$('m-err').textContent='';
+if(MODAL==='create'){const n=$('c-name').value.trim(),p=$('c-pass').value,m=parseInt($('c-mem').value)||1000;
+if(!n){showError('名称必填');return;}if(!p){showError('密码必填');return;}
+if((window._wsNames||[]).includes(n)){showError('工作组名称「'+n+'」已被占用，请换一个名称');return;}
+showLoading('正在创建飞书目录...');$('m-ok').textContent='⏳ 创建中...';
+api('POST','/api/workspaces/create',{name:n,password:p,memoryLimit:m}).then(r=>{
+hideLoading();
+if(r.error){showError(r.error);return;}
+closeModal();renderLobby();showMcpSync(r.wsId,n,r.localWrite);}).catch(e=>{hideLoading();showError(e.message||'创建失败');});
+}else if(MODAL==='join'){const n=$('j-name').value.trim(),p=$('j-pass').value;
+if(!n){showError('工作组名称必填');return;}
+showLoading('正在飞书中查找并验证...');$('m-ok').textContent='⏳ 加入中...';
+api('POST','/api/workspaces/join',{wsName:n,password:p,settings:{autoPush:$('j-push').checked,autoPull:$('j-pull').checked}}).then(r=>{
+hideLoading();
+if(r.error){showError(r.error);return;}
+closeModal();renderLobby();showMcpSync(r.wsId,n,r.localWrite);}).catch(e=>{hideLoading();showError(e.message||'加入失败');});}
+else if(MODAL==='editConfig'){const provider=$('e-provider').value,baseUrl=$('e-baseurl').value.trim(),apiKey=$('e-key').value.trim(),modelId=$('e-model').value.trim();
+if(!modelId){showError('Model ID 必填（AI 任务拆分依赖它）');return;}
+showLoading('正在保存 AI 配置（热同步）...');$('m-ok').textContent='⏳ 保存中...';
+api('PUT','/api/me/ai-config',{provider,baseUrl,apiKey,modelId}).then(r=>{
+hideLoading();
+if(r.error){showError(r.error);return;}
+closeModal();
+api('GET','/api/me').then(me=>renderProfile(me)); // 热同步：立即刷新侧栏 AI Provider 显示
+}).catch(e=>{hideLoading();showError(e.message||'保存失败');});}
+else if(MODAL==='mcpSync'){closeModal();}}
+function renderProfile(me){if(!me||!me.name)return;const c=me.aiConfig||{};
+$('l-profile').innerHTML='<div class="ldc"><div class="av idle" style="background:'+avC(me.name)+'">'+me.name[0].toUpperCase()+'</div><div><div class="nm">'+esc(me.name)+'</div><div class="rl">已登录</div></div></div>'
++'<h2 class="sec-h">🤖 AI Provider</h2><div style="font-size:var(--fsX);color:var(--mut);line-height:1.8;padding:0 .3rem">'
++'<div><b>Provider:</b> '+esc(c.provider||'未设置')+'</div><div><b>Model:</b> '+esc(c.modelId||'未设置')+'</div>'
++'<div><b>Base URL:</b> '+esc(c.baseUrl||'默认')+'</div><div><b>API Key:</b> '+(c.apiKey?'已配置':'未配置')+'</div></div>'
++'<h2 class="sec-h">⚙️ 设置</h2><button class="btn btn-s" style="width:100%;font-size:var(--fsX);padding:.4rem" onclick="editAiConfig()">编辑 AI 配置</button>'
++'<h2 class="sec-h">🔌 MCP</h2><button class="btn btn-s" style="width:100%;font-size:var(--fsX);padding:.4rem" onclick="showMcpSyncCurrent()">📋 MCP 已就绪？点击配置</button>';
+window._myAiConfig=c;}
+// ★ v4.4.2 仪表盘加入/创建后直接触发 MCP 侧配置——不需要再去 AI 对话框说"加入工作组"
+function showMcpSyncCurrent(){
+  const t=localStorage.getItem('tw-token')||'';
+  if(!t){uiToast('请先登录',true);return;}
+  // 从当前工作组列表找活跃组
+  api('GET','/api/workspaces').then(({mine,joined})=>{
+    const all=[...(mine||[]),...(joined||[])];
+    const active=all.find(w=>w.phase==='OPEN')||all[0];
+    if(active) showMcpSync(active.wsId,active.name);
+    else uiToast('请先创建或加入工作组',true);
+  });
+}
+// ★ v4.6.1 修复：uiToast 在 lobby.html 中缺失（copyMcpConfig/copyLinkCmd 调用时静默失败）
+function uiToast(msg,isErr,ms){const d=document.createElement('div');
+  d.style.cssText='position:fixed;top:70px;right:18px;z-index:130;background:'+(isErr?'rgba(244,63,94,.92)':'rgba(15,18,35,.92)')+';border:1px solid '+(isErr?'rgba(244,63,94,.5)':'var(--pb)')+';border-left:3px solid '+(isErr?'#f43f5e':'#34d399')+';border-radius:.6rem;padding:.7rem 1rem;font-size:var(--fsS);color:var(--txt);max-width:340px;box-shadow:0 8px 30px rgba(0,0,0,.4);pointer-events:none';
+  d.textContent=msg;document.body.appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .4s';setTimeout(()=>d.remove(),400);},ms||3200);}
+function showMcpSync(wsId,wsName,autoWritten){
+  const user=localStorage.getItem('tw-display-name')||'';
+  const mcpPath=localStorage.getItem('tw-mcp-path')||'';
+  const mcpJson=JSON.stringify({mcpServers:{teamwork:{command:'node',args:[mcpPath||'<teamwork安装路径>/mcp/index.js'],env:{TEAMWORK_SERVER_URL:location.origin}}}},null,2);
+  MODAL='mcpSync';
+  let html='';
+  if(autoWritten){
+    html+='<div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.3);border-radius:.5rem;padding:.6rem .8rem;margin-bottom:1rem;font-size:var(--fsS);color:#34d399;line-height:1.6">'
+    +'✅ token.json 已自动写入 ~/.teamwork/token.json — MCP 无需手动配置 token</div>';
+  }else{
+    const linkCmd='teamwork link '+(localStorage.getItem('tw-token')||'')+' '+wsId+' '+user+' --server '+location.origin;
+    html+='<div class="fg"><label>远程用户：在本地终端运行以下命令写入 token</label>'
+    +'<div style="display:flex;gap:.5rem;align-items:center">'
+    +'<input id="mcp-link-cmd" readonly value="'+esc(linkCmd)+'" style="flex:1;font-family:monospace;font-size:var(--fsX);padding:.5rem .6rem;border:1px solid var(--pb);border-radius:.4rem;background:rgba(255,255,255,.04);color:var(--txt)">'
+    +'<button class="btn btn-p" onclick="copyLinkCmd()" style="flex:none">📋</button></div></div>';
+  }
+  html+='<div class="fg"><label>配置你的 AI 工具 MCP（唯一手动步骤）</label>'
+  +'<pre style="font-size:var(--fsX);color:var(--mut);background:rgba(255,255,255,.04);padding:.6rem;border-radius:.4rem;overflow-x:auto;white-space:pre-wrap">'+esc(mcpJson)+'</pre>'
+  +'<div style="display:flex;gap:.5rem">'
+  +'<button class="btn btn-p" style="flex:1" onclick="copyMcpConfig()">📋 复制 MCP 配置</button>'
+  +'<button class="btn btn-s" onclick="runSetup()">⚡ teamwork setup 自动配置</button></div>'
+  +'<div style="font-size:var(--fsX);color:var(--dim);margin-top:.4rem;line-height:1.8">'
+  +'<b>TRAE</b>: 设置 → MCP → 添加上面的 JSON<br>'
+  +'<b>Claude Code</b>: 设置 → MCP → 添加上面的 JSON<br>'
+  +'<b>Cursor</b>: 设置 → MCP → 添加上面的 JSON<br>'
+  +'<b>最简单</b>: 直接运行 <code>teamwork setup</code> — 自动检测并写入全部配置</div></div>'
+  +'<div style="font-size:var(--fsX);color:var(--dim);margin-top:.5rem;line-height:1.6">配置完成后，打开 AI 工具直接开始工作。</div>';
+  showModal('🔧 配置你的 AI 工具', (autoWritten?'加入「'+wsName+'」成功！token 已自动写入':'加入「'+wsName+'」成功！请完成以下配置'), html);
+  $('m-ok').textContent='完成';
+  $('m-cancel').style.display='none'; // 信息引导弹窗：仅保留「完成」，点击即关闭（v4.6.2 修复：原 doModal 无 mcpSync 分支导致弹窗无法关闭）
+  window._mcpConfig=mcpJson;
+}
+function copyMcpConfig(){
+  navigator.clipboard.writeText(window._mcpConfig).then(()=>uiToast('✅ MCP 配置已复制——请粘贴到你的 AI 工具设置')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=window._mcpConfig;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    uiToast('✅ MCP 配置已复制——请粘贴到你的 AI 工具设置');});
+}
+function runSetup(){
+  uiToast('请在终端运行: teamwork setup',false,5000);
+}
+function copyLinkCmd(){
+  const el=$('mcp-link-cmd');if(el)el.select();
+  navigator.clipboard.writeText(el?el.value:'').then(()=>uiToast('✅ 命令已复制——请打开终端粘贴运行'));
+}
+function renderLobby(){api('GET','/api/workspaces').then(({mine,joined,dissolved,error})=>{
+if(error){$('l-list').innerHTML='<div class="err-msg">'+error+'</div>';return;}
+let h='';if(mine.length){h+='<h2 style="color:var(--dim);font-size:var(--fsS);margin-bottom:.8rem">✦ 我创建的</h2><div class="ws-grid">'+mine.map(wsCard).join('')+'</div>';}
+if(joined.length){h+='<h2 style="color:var(--dim);font-size:var(--fsS);margin:1.4rem 0 .8rem">🤝 我加入的</h2><div class="ws-grid">'+joined.map(wsCard).join('')+'</div>';}
+if(dissolved&&dissolved.length){h+='<h2 style="color:#f43f5e;font-size:var(--fsS);margin:1.4rem 0 .8rem">🔴 已解散</h2><div class="ws-grid">'+dissolved.map(dissolvedCard).join('')+'</div>';}
+if(!mine.length&&!joined.length&&!(dissolved&&dissolved.length)){h='<div class="emp"><span class="ee">🚀</span><div class="et">还没有工作组</div><div class="eh">点击上方按钮创建或加入</div></div>';}
+$('l-list').innerHTML=h;});}
+function dissolvedCard(w){
+return '<div class="ws-card" style="opacity:.6" onclick="dismissWs(\''+w.wsId+'\')">'+'<span class="ws-badge" style="background:rgba(244,63,94,.15);color:#f43f5e">🔴 已解散</span>'+'<div class="wn">'+esc(w.name)+'</div><div class="wr">组已被创建者解散</div>'+'<div class="ws-stats"><span style="color:#f43f5e">●</span></div>'+'<div style="font-size:var(--fsX);color:var(--mut);margin-top:.6rem">点击卡片从列表中移除</div></div>';}
+function dismissWs(id){if(BUSY)return;if(!confirm('该工作组已被创建者解散，确定从你的列表中移除吗？'))return;
+showLoading('正在移除已解散的工作组...');
+api('POST','/api/workspaces/dismiss',{wsId:id}).then(r=>{hideLoading();if(r.error)alert(r.error);renderLobby();}).catch(e=>{hideLoading();alert(e.message)});}
+function wsCard(w){
+  const isDormant = w.phase === 'DORMANT';
+  const canEnter = true; // 挂起的工作组也可点击进入（查看模式）；唤醒仍需 Leader「▶ 启动」
+  const isActive = w.active && w.phase === 'OPEN'; // 显示层：当前活跃标记
+  const badge = w.phase === 'DORMANT' ? '<span class="ws-badge dormant">💤 已挂起</span>'
+    : isActive ? '<span class="ws-badge leader">🟢 工作中</span>'
+    : '<span class="ws-badge '+w.role+'">'+w.role.toUpperCase()+'</span>';
+  const actions = [];
+  if (w.role === 'leader') {
+    if (w.phase === 'OPEN') actions.push('<button class="btn btn-s" onclick="event.stopPropagation();closeWs(\''+w.wsId+'\')" style="padding:.2rem .5rem;font-size:var(--fsX)">⏸ 关闭</button>');
+    else if (w.phase === 'DORMANT') actions.push('<button class="btn btn-p" onclick="event.stopPropagation();reopenWs(\''+w.wsId+'\')" style="padding:.2rem .5rem;font-size:var(--fsX)">▶ 启动</button>');
+    actions.push('<button class="btn btn-s" onclick="event.stopPropagation();deleteWs(\''+w.wsId+'\')" style="padding:.2rem .5rem;font-size:var(--fsX);color:#f43f5e">🗑 删除</button>');
+  } else {
+    actions.push('<button class="btn btn-s" onclick="event.stopPropagation();leaveWs(\''+w.wsId+'\')" style="padding:.2rem .5rem;font-size:var(--fsX)">🚪 退出</button>');
+    if (w.phase === 'OPEN') actions.push('<button class="btn btn-s" onclick="event.stopPropagation();closeWs(\''+w.wsId+'\')" style="padding:.2rem .5rem;font-size:var(--fsX)">⏸ 挂起</button>');
+    else actions.push('<button class="btn btn-p" onclick="event.stopPropagation();reopenWs(\''+w.wsId+'\')" style="padding:.2rem .5rem;font-size:var(--fsX)">▶ 启动</button>');
+  }
+  return '<div class="ws-card'+(isDormant?' style="opacity:.75"':'')+'" onclick="enterWsCard(\''+w.wsId+'\',\''+esc(w.name)+'\')">'+badge+
+    '<div class="wn">'+esc(w.name)+'</div><div class="wr">👑 '+esc(w.leader)+'</div>'+
+    '<div class="ws-stats"><span>👥 <b>'+w.memberCount+'</b></span><span>📝 <b>'+w.nodeCount+'</b></span>'+
+    (w.phase==='OPEN'?'<span style="color:#34d399">●</span>':'')+'</div>'+
+    (actions.length?'<div style="display:flex;gap:.4rem;margin-top:.6rem">'+actions.join('')+'</div>':'')+
+    '</div>';}
+function enterWsCard(wsId,wsName){
+  api('GET','/api/workspaces').then(({mine,joined})=>{
+    const activeWs=[...mine,...joined].find(w=>w.phase==='OPEN'&&w.wsId!==wsId);
+    if(activeWs){alert('你已加入活跃工作组「'+activeWs.name+'」，请先关闭/挂起后再进入其他工作组');return;}
+    location.href='/ws/'+wsId;});}
+function editAiConfig(){
+  if(BUSY)return;
+  api('GET','/api/workspaces').then(({mine,joined})=>{
+    const activeWs=[...mine,...joined].find(w=>w.phase==='OPEN');
+    if(activeWs){alert('你已加入活跃工作组「'+activeWs.name+'」，请先退出/挂起当前活跃工作组才能修改 AI 配置');return;}
+    MODAL='editConfig';
+    const c=window._myAiConfig||{};
+    showModal('🤖 编辑 AI Provider','修改后立即热同步，无需重启',
+      '<div class="fg"><label>Provider</label><select id="e-provider">'
+      +['claude','gemini','openrouter','openai-compatible'].map(p=>'<option value="'+p+'"'+(c.provider===p?' selected':'')+'>'+p+'</option>').join('')
+      +'</select></div>'
+      +'<div class="fg"><label>Base URL</label><input id="e-baseurl" value="'+esc(c.baseUrl||'')+'"></div>'
+      +'<div class="fg"><label>API Key</label><input id="e-key" type="password" value="'+esc(c.apiKey||'')+'"></div>'
+      +'<div class="fg"><label>Model ID</label><input id="e-model" value="'+esc(c.modelId||'')+'"></div>');
+    $('m-ok').textContent='保存';
+  });}
+function leaveWs(id){if(BUSY)return;if(!confirm('确定退出该工作组？退出后需重新通过密码加入。'))return;
+showLoading('正在退出工作组...');
+api('POST','/api/ws/'+id+'/leave').then(r=>{hideLoading();if(r.error)alert(r.error);renderLobby();}).catch(e=>{hideLoading();alert(e.message)});}
+function closeWs(id){if(BUSY)return;if(!confirm('确定关闭？工作组将挂起，成员暂时退出。'))return;
+showLoading('正在关闭工作组...');
+api('POST','/api/ws/'+id+'/close').then(r=>{hideLoading();if(r.error)alert(r.error);renderLobby();}).catch(e=>{hideLoading();alert(e.message)});}
+function reopenWs(id){if(BUSY)return;
+showLoading('正在启动工作组...');
+api('POST','/api/ws/'+id+'/reopen').then(r=>{hideLoading();if(r.error)alert(r.error);renderLobby();}).catch(e=>{hideLoading();alert(e.message)});}
+function deleteWs(id){if(BUSY)return;if(!confirm('确定删除？此操作不可恢复！'))return;
+showLoading('正在删除工作组及飞书目录...');
+api('POST','/api/ws/'+id+'/delete').then(r=>{hideLoading();if(r.error)alert(r.error);renderLobby();}).catch(e=>{hideLoading();alert(e.message)});}
+checkAuth(me=>{$('h-user').textContent=me.name;renderProfile(me);renderLobby();});
+</script>
+</body>
+</html>

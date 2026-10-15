@@ -1,0 +1,13 @@
+node_modules/
+.env
+.local/
+state.json
+state-v4.json
+*.log
+dist/
+dist-archive/
+TEMP/
+srv-err.txt
+srv-out.txt
+e2e-*.cjs
+

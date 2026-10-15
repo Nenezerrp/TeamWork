@@ -209,5 +209,5 @@ T-3  登录 API 联调    （dependsOn = [T-1, T-2]，后继任务）
 2. **同步进度**：双方 observe 自动入图——队友无需问「你做到哪了」，看节点地图即可；
 3. **继承背景**：T-3 拾取者拿到 T-1/T-2 全部记忆注入——无需人工粘贴 5 步提示词（search → timeline → get_observations → 开发 → report_done）。
 
-> 本剧本对应实现细节见 `ARCHITECTURE-v4.md`（变更记录 v4.2~v1.0.8）；安装与配置见 `README.md`。
+> 本剧本对应实现细节见 [architecture.md](./architecture.md)（变更记录 v4.2~v1.0.8）；安装与配置见 [getting-started.md](./getting-started.md)。
 

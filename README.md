@@ -1,109 +1,183 @@
-# TeamWork — 多用户 AI 协作系统
+<div align="center">
 
-## 安装
+# 🤝 TeamWork
 
-前置：Node.js >= 18（https://nodejs.org）
+**多用户 AI 协作系统 —— 把「N 个人 × N 个 AI 会话」变成一条有共享记忆的流水线**
+
+[![GitHub release](https://img.shields.io/badge/release-v1.0.14-blue)](https://github.com/Nenezerrp/TeamWork/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18.0-brightgreen)](https://nodejs.org)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](#)
+[![AI Hosts](https://img.shields.io/badge/AI%20Hosts-TRAE%20%7C%20Claude%20Code%20%7C%20Cursor%20%7C%20Any%20MCP-ff6f61)](#)
+
+**npm 安装 → 仪表盘加入工作组 → AI 工具全自动默式协作**
+
+[🚀 快速开始](#-快速开始) · [🎬 协作演示](docs/demo-collaboration.md) · [🏗️ 架构文档](docs/architecture.md) · [💎 价值报告](docs/value-report.md) · [📖 使用手册](docs/getting-started.md)
+
+**如果 TeamWork 对你的团队有帮助，欢迎 Star ⭐ 支持！**
+
+</div>
+
+---
+
+## 为什么需要 TeamWork
+
+AI 会话是天然孤岛——每个人的 AI 不知道别人做了什么。TeamWork **不替换任何人的 AI 工具**，而是给现有 AI 开发补上**协作层**，让多人在各自的 TRAE / Claude Code / Cursor / 任意 MCP 宿主里像同一条流水线一样协作，系统性消除三类隐性成本：
+
+| 隐性成本 | 无 TeamWork 的现状 | TeamWork 的解法 |
+|---|---|---|
+| **上下文税** | 给队友的 AI 交代背景，需要人工粘贴提示词 | ContextBundle 自动注入（2K 预算），后继者零输入开工 |
+| **试错税** | 一个人踩过的坑，另一个人的 AI 原样再踩一遍 | gotcha 置顶 + 共识 Δ 注入 + RNN 注入边，经验变组级免疫 |
+| **协调税** | 任务分配、进度同步、背景交接全靠喊话 | 画像感知拆分定向分发 + observe 静默入图 + 依赖自动解锁 |
+
+**三个「零输入」时刻**（[完整剧本](docs/demo-collaboration.md)）：
+
+1. **发现任务零输入** —— SessionStart hook 静默注入收件箱候选，Leader 无需喊话分配
+2. **同步进度零输入** —— observe 钩子自动上报入图，看节点地图即知进度，零会议零汇报
+3. **继承背景零输入** —— 后继任务拾取者自动获得前人全部记忆，无需粘贴任何提示词
+
+> 🎬 一次 3 任务双端协作实测：**70 分钟全链闭合，全程零会议、零进度汇报**——[docs/demo-collaboration.md](docs/demo-collaboration.md)
+
+## ✨ 核心特性
+
+| | 特性 | 说明 |
+|---|---|---|
+| 🧵 | **任务协作** | Leader 一句话发布 → 服务器画像感知拆分（成员技能 / 身份域 / 空闲状态）→ 定向默式注入收件箱 → CAS 原子抢锁 → 完成上报自动解锁后继 |
+| 🧠 | **共享记忆** | 工作产出自动沉淀为团队记忆：三层检索（关键词 / 拓扑 / 域）+ 时间线回溯 + 渐进披露（L0 索引 ~50 tokens/条，防上下文膨胀） |
+| ⚖️ | **共识约束** | 团队长线共识版本化治理（命名 / 架构 / 流程）：提议 → 全员确认或 Leader 一票生效 → Δ 增量注入全员上下文 |
+| 🔗 | **链路继承** | 未完成开发链可被新成员自主继承（open-ends → inherit → InheritBundle）——溯源 + 崩溃回退防护，失败记忆沉淀为 gotcha 防重蹈覆辙 |
+| ☁️ | **飞书云同步** | 全部数据实时同步飞书云文档：换机、新成员加入即自动恢复；隐私管线（`<private>` 剥离 + 正则脱敏）先过审再上云 |
+| 🗺️ | **可视化仪表盘** | 节点地图（真实注入边 / 拓扑徽标 / 回退过滤）、成员状态、任务看板、共识管理、Metering（token 用量 + 预算告警） |
+
+---
+
+## 🏗️ 架构总览
+
+```
+┌───────────┐   ┌───────────┐   ┌───────────┐
+│   TRAE    │   │Claude Code│   │  Cursor   │   …… 任意 MCP 宿主（每人自己的 AI）
+│ (Leader)  │   │  (成员)   │   │  (成员)   │
+└─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+      │  MCP 工具面（15 个协作工具）+ SessionStart 注入 + observe 静默上报
+      ▼               ▼               ▼
+┌─────────────────────────────────────────────┐
+│            本机 Server + 仪表盘               │
+│   任务拓扑 · CAS 抢锁 · ContextBundle 注入    │
+│   节点地图 · 租约保活 · 隐私管线 · SSE 推送   │
+└───────────────────────┬─────────────────────┘
+                        │  防抖批量 + 幂等锚点，实时同步
+                        ▼
+          ☁️ 飞书云文档 NodeMap.md（唯一共享层）
+             换机 / 新成员加入 → 全量自动恢复
+```
+
+**关键机制速览**：
+
+| 机制 | 一句话 |
+|---|---|
+| ContextBundle | 唯一注入组装入口：共识层 + gotcha 置顶 + 拓扑行 + 2K 预算硬裁剪 |
+| CAS 抢锁 | 原子拾取任务，根除「两人做到同一个任务」的重复劳动 |
+| 租约保活 | 心跳不算——ack / observe / share / report_done 四类产出刷新，超时自动回收任务 |
+| 隐私管线 | `<private>` 剥离 + 正则脱敏（密钥实测拦截）之后才入图 / 上云 |
+| 渐进披露 | search（索引）→ timeline（上下文）→ get_observations（详情），按需加载不爆上下文 |
+
+> 完整设计决策与 E2E 实证记录见 [docs/architecture.md](docs/architecture.md)（760 行，v4.0 → v1.0.14 全程演进）
+
+## 🚀 快速开始
+
+前置：[Node.js >= 18](https://nodejs.org)。从 [Releases](https://github.com/Nenezerrp/TeamWork/releases) 下载 `TeamWork.zip` 解压后：
 
 ```bash
-npm install -g <安装包路径>\teamwork-cli-1.0.14.tgz
+# 1. 安装 CLI
+npm install -g ./teamwork-cli-1.0.14.tgz
 teamwork version        # → TeamWork v1.0.14
-```
 
-升级旧版本（顺序不能变，运行中直装会 EBUSY）：
-
-```bash
-teamwork stop
-npm install -g <新包路径>
+# 2. 启动（浏览器自动打开 http://localhost:8787）
 teamwork start
+
+# 3. 仪表盘创建 / 加入工作组（Leader 填名称+密码；成员凭组名+密码加入）
+#    → 飞书云端自动恢复全部任务/记忆
+
+# 4. 一键配置本机 AI 工具 MCP（自动检测 TRAE / Claude Code / Cursor）
+teamwork setup
 ```
 
-## 使用（按顺序执行）
+完成后打开 AI 工具即可协作。升级 / 远程访问 / 飞书绑定等见 [docs/getting-started.md](docs/getting-started.md)。
 
-### 1. 启动
+## 🎬 70 分钟实战演示（双端剧本）
 
-```bash
-teamwork start
+[docs/demo-collaboration.md](docs/demo-collaboration.md) 按时间轴还原了一次真实协作——Leader 阿哲 × 前端成员小雨在各自 AI 工具里完成「JWT 中间件 + 登录页 UI + API 联调」三个任务，逐事件标注什么提示词触发了哪个 hook / MCP 工具、server 幕后做了什么：
+
+```
+阿哲 ██████ T-1 开发 ██████┤ done ─┄┄┄┄┄┄┄（等 T-2）┄┄┐
+                                                ├─→ T-3 联调（小雨）████ done
+小雨 ──┤ T-2 开发 ██████████████████┤ done ──────┘
+       ▲                        ▲
+  ack 抢锁(T+0:03)     gotcha 分享(T+0:25)——对端节点地图实时可见
+       ├────── 双方 observe 静默上报持续整个开发期，互不阻塞 ──────┤
 ```
 
-浏览器自动打开 `http://localhost:8787`
+六幕剧：**① 一句话发布（画像感知拆分）→ ② 零提示词抢锁开工（ContextBundle）→ ③ 双端并行开发（observe 入图）→ ④ 踩坑跨人流动（gotcha 置顶）→ ⑤ 共识 Δ 注入 → ⑥ 完成解锁 + 跨人继承联调**。
 
-### 2. 注册
+## 🧩 MCP 工具面（15 个协作工具）
 
-浏览器自动打开登录页 → 输入登录 ID → 点「进入」（自动跳转工作组大厅，登录态自动写入本机）
-
-### 3. 创建或加入工作组
-
-**创建（Leader）**：大厅 → 点「+ 创建工作组」→ 填 Workspace Name + Wpassword → 确认（自动创建飞书目录）
-
-**加入（成员）**：大厅 → 点「加入工作组」→ 填工作组名称 + Wpassword（Leader 提供）→ 确认（自动从飞书云端恢复全部任务/记忆）
-
-### 4. 配置 AI 工具 MCP（创建/加入后弹窗引导，最后一步）
-
-```bash
-teamwork setup          # 自动检测本机 AI 工具（TRAE / Claude Code / Cursor）并写入 MCP 配置
-```
-
-完成后打开 AI 工具即可开始协作。
-
-### 5. 绑定个人飞书身份（可选）
-
-前置：管理员已在飞书开放平台把你加入应用「可用范围」，否则无需本步。
-
-```bash
-teamwork feishu-auth --app-id cli_aa46d13079b99bc2 --app-secret <你的飞书AppSecret> --root-folder GpLsfKxo4lYcludu39UcB2GTnrf
-```
-
-浏览器自动打开 → 飞书账号登录 → 同意授权
-
-## CLI 命令
-
-| 命令 | 说明 |
+| 类别 | 工具 |
 |---|---|
-| `teamwork start` | 启动 server（后台）+ 打开仪表盘 |
-| `teamwork start --port 9000` | 指定端口启动 |
-| `teamwork stop` | 停止 server（优雅落盘） |
-| `teamwork stop --force` | 强制清理残留进程 |
-| `teamwork status` | 查看运行状态 |
-| `teamwork version` | 版本 |
-| `teamwork doctor` | 环境自检（Node/凭据链/飞书连通性）——建组报「飞书目录创建失败」时先跑它 |
-| `teamwork link <token> <wsId> [user] --server <url>` | 远程访问场景：写入登录态 + 自动配置 AI 工具 MCP（本机使用自动写入，无需此命令） |
-| `teamwork feishu-auth --app-id .. --app-secret .. --root-folder ..` | 绑定个人飞书身份 |
-| `teamwork setup` | 检测 AI 工具 + 自动配置 MCP |
-| `teamwork setup --trae / --claude / --cursor` | 只配置指定工具 |
+| 任务闭环 | `teamwork_publish_task`（画像感知拆分）· `teamwork_inbox_status` · `teamwork_ack`（CAS 抢锁）· `teamwork_report_done`（自动解锁后继） |
+| 共享记忆 | `teamwork_share_memory` · `teamwork_observe`（静默采集）· `teamwork_search` · `teamwork_timeline` · `teamwork_get_observations` |
+| 共识治理 | `teamwork_consensus`（提议 / 确认 / 裁决 / 归档四模式） |
+| 链路继承 | `teamwork_open_ends` · `teamwork_inherit` · `teamwork_revert`（崩溃回退 + 失败记忆沉淀） |
+| 身份与技能 | `teamwork_join` · `teamwork_skills` |
 
-## 静默拾取（v1.0.8）——继承任务后 AI 零输入开工
+协议指引已内置在工具描述与注入源中——**AI 会话自然触发即可，无需记工具**。
 
-Server 每 3 秒把「身份 + 共识 + 收件箱 + **进行中任务（含链上前人记忆摘要：谁做了什么/怎么做的/卡在哪 + 验收标准 + 📄 文件锚点）**」写入 `~/.teamwork/inject-{wsId}.md`，也可 HTTP 拉取（`GET /api/ws/<wsId>/inject.md`，带登录 token）。在仪表盘继承/拾取任务后，你的 AI 对话框只要被注入这份文件，即拥有全部背景——不再需要手动粘贴提示词；摘要之外的完整叙事按需调 `teamwork_timeline` / `teamwork_get_observations`（渐进披露，防上下文膨胀）。
+## 📊 实施成熟度
 
-三种接入方式（按宿主能力任选）：
+- **协作域 19/19 冒烟通过** + HTTP 全链路实测（ack CAS 抢锁、依赖门控与解锁、评分排序）
+- MCP 工具面收敛，每次调用 < 1s 返回
+- 三种分发形态适配内网：**npm 在线 / .tgz 离线 / .zip 零依赖**
+- 数据全落本机 `~/.teamwork/`，升级安装包不丢数据
 
-| 宿主 | 接法 |
+## 📖 文档中心
+
+| 文档 | 内容 |
 |---|---|
-| MCP 宿主（TRAE / Claude Code / Cursor） | AI 会话自然触发 `teamwork_inbox_status` / `teamwork_search` 即可——协议指引已内置在工具描述与注入源 |
-| 采集钩子 | `node scripts/observe-hook.mjs --ws <wsId> --file <对话日志> --inject-file zz-teamwork-inject.md`——边采集对话边把注入源原子落盘到项目文件（Grok 式注入媒介，含 2s 超时 fail-open） |
-| 任意 hook / rules（SessionStart 等） | hook 脚本读 `~/.teamwork/inject-{wsId}.md` 附加进会话上下文——`<teamwork-inject>` 标签外手写内容永不覆盖 |
+| [使用手册](docs/getting-started.md) | 安装 / 升级 / CLI 全参考 / 三种接入方式 / 飞书绑定 |
+| [协作演示](docs/demo-collaboration.md) | 70 分钟双人剧本：六幕时间轴 + 机制速查表 + 三个零输入时刻 |
+| [架构文档](docs/architecture.md) | v4.0 → v1.0.14 全程设计决策与 E2E 实证（760 行） |
+| [价值报告](docs/value-report.md) | 三类隐性成本 / 试错四道防线 / ROI 总览 / 成本构成 / 边界假设 |
 
+## 📁 项目结构
 
-## 功能说明
+```
+teamwork/
+├── bin/teamwork.js      # CLI 入口（start / stop / status / setup / doctor / feishu-auth …）
+├── server/              # 协作 server + 仪表盘（index.js / feishu-sync.js / public/）
+├── mcp/index.js         # MCP 工具面（15 个协作工具）
+├── scripts/             # setup / observe-hook / build-package 等
+├── docs/                # 文档中心（手册 / 演示 / 架构 / 价值报告）
+├── .env.example         # 环境变量模板
+├── LICENSE              # MIT
+└── package.json         # @teamwork/cli v1.0.14
+```
 
-TeamWork 让多人在各自的 AI 工具（TRAE / Claude Code / Cursor / 任意 MCP 宿主）中协作：
+## 🤝 贡献
 
-- **任务协作**：Leader 发布任务 → 按成员画像定向分发 → 抢锁拾取 → 完成上报自动解锁后继
-- **共享记忆**：工作产出自动沉淀为团队记忆，三层检索（关键词 / 拓扑 / 域）、时间线回溯
-- **共识约束**：团队长线共识（命名 / 架构 / 流程约定）自动注入全员上下文
-- **链路继承**：未完成开发链可被新成员继承（溯源 + 崩溃回退防护）
-- **飞书云同步**：全部数据实时同步飞书云文档——换机、新成员加入即自动恢复
-- **仪表盘**：节点地图可视化、成员状态、共识管理、任务看板
+- 发现问题：[Issues](https://github.com/Nenezerrp/TeamWork/issues)
+- 想要的功能 / 适配更多 AI 宿主：提 Feature Request，附上你的宿主类型
+- 协作机制的设计细节与演进史见 [docs/architecture.md](docs/architecture.md)——欢迎讨论
 
-数据全部落在本机 `~/.teamwork/`——升级安装包不丢数据。
+## 📄 License
 
-## 协作演示
+[MIT](./LICENSE) © TeamWork Contributors
 
-一图胜千言：**[docs/demo-collaboration.md](docs/demo-collaboration.md)** 是一份完整的双人协作剧本（Leader × 成员），按时间轴展示两人在各自 AI 端的对话内容，逐事件注释——什么提示词触发了哪个 hook / MCP 工具、server 在幕后做了什么（画像拆分 / CAS 抢锁 / 隐私管线 / 飞书同步）、双端如何**并行**工作、记忆如何**跨人流动**（gotcha 置顶 / RNN 注入边 / 共识 Δ 注入）。
+---
 
-其中三个「零输入」时刻是静默链路的核心：**① SessionStart 注入发现任务（Leader 无需喊话）② observe 自动入图（队友无需问进度，看节点地图）③ ContextBundle 继承前人记忆（后继者无需粘贴背景提示词）**——详见演示文档。
+<div align="center">
 
-## License
+**TeamWork —— 给现有 AI 开发补上协作层**
 
-MIT
+[🚀 快速开始](#-快速开始) · [🎬 看演示](docs/demo-collaboration.md) · [⭐ Star 支持](https://github.com/Nenezerrp/TeamWork)
+
+</div>
 
